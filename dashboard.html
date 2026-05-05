@@ -215,10 +215,9 @@ function getWeekStart() {
 function processData({ candidates, jobs, interviews, events }) {
   const total = candidates.length;
 
-  const apt = candidates.filter(c => {
-    const s = (c.Candidate_Status || '').toLowerCase();
-    return s === 'future reference' || s === 'qualified';
-  }).length;
+  const apt = candidates.filter(c =>
+    (c.Candidate_Status || '').toLowerCase() === 'future reference'
+  ).length;
 
   const weekStart = getWeekStart();
   const discoveryCalls = (events || []).filter(e =>
@@ -317,7 +316,7 @@ function renderDashboard(raw) {
       <div class="kpi-card ${statusCls(aptRate, 25, 15)}">
         <div class="kpi-label">APTOS OUTPOST QA</div>
         <div class="kpi-value">${s.apt}</div>
-        <div class="kpi-sub">${aptRate}% del total — Future Reference o Qualified</div>
+        <div class="kpi-sub">${aptRate}% del total — status = Future Reference</div>
       </div>
       <div class="kpi-card ${statusCls(screeningRate, 30, 15)}">
         <div class="kpi-label">SCREENING CALLS</div>
