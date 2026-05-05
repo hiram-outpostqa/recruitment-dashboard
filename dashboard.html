@@ -130,6 +130,22 @@
   }
   .insight-card strong { color: var(--text); font-weight: 500; }
 
+  .pool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .pool-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .pool-card-header { padding: 14px 18px 10px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .pool-card-title { font-size: 13px; font-weight: 500; }
+  .pool-card-total { font-size: 11px; font-family: var(--mono); color: var(--muted); }
+  .pool-levels { padding: 10px 18px 14px; display: flex; flex-direction: column; gap: 7px; }
+  .pool-level-row { display: flex; align-items: center; gap: 10px; }
+  .pool-level-name { font-size: 11px; font-family: var(--mono); color: var(--muted); width: 58px; flex-shrink: 0; }
+  .pool-level-bar-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .pool-level-bar-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width 0.5s ease; }
+  .pool-level-count { font-size: 11px; font-family: var(--mono); color: var(--text); width: 20px; text-align: right; flex-shrink: 0; }
+  .pool-summary-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 0 10px 10px 0; padding: 14px 18px; margin-bottom: 14px; display: flex; gap: 32px; flex-wrap: wrap; align-items: center; }
+  .pool-summary-stat { display: flex; flex-direction: column; gap: 2px; }
+  .pool-summary-val { font-size: 22px; font-weight: 600; color: var(--green); line-height: 1; }
+  .pool-summary-lbl { font-size: 11px; font-family: var(--mono); color: var(--muted); }
+
   .state-screen {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     min-height: 60vh; gap: 14px; color: var(--muted); font-family: var(--mono);
@@ -241,11 +257,27 @@ function processData({ candidates, jobs, interviews, events }) {
     (i.Interview_Status || i.Status || '').toLowerCase().includes('move to next round')
   ).length;
 
+  // Pool of talent: Future Reference candidates by category and level
+  const CATEGORIES = ['Manual Tester','Automation Tester','QA Analyst','SDET','Developer','Director','Manager','Scrum Master','DevOps','IT Engineer','INTERNSHIP','Administrative','Other'];
+  const LEVELS = ['Trainee','L1','L2','L3','Staff','Manager','Director'];
+  const poolCandidates = candidates.filter(c => (c.Candidate_Status || '').toLowerCase() === 'future reference');
+  const poolByCategory = CATEGORIES.map(cat => {
+    const members = poolCandidates.filter(c => (c.Candidate_Category || '').trim() === cat);
+    if (members.length === 0) return null;
+    const byLevel = LEVELS.map(lv => ({
+      level: lv,
+      count: members.filter(c => (c.Leveling || '').trim() === lv).length
+    })).filter(l => l.count > 0);
+    const unleveled = members.filter(c => !c.Leveling || c.Leveling.trim() === '').length;
+    return { cat, total: members.length, byLevel, unleveled };
+  }).filter(Boolean);
+
   return {
     total, apt, screeningCalls, screeningThisWeek,
     inReview, offered, hired, offerAcceptRate,
     openJobs, closedJobs, holdJobs, cancelledJobs,
     totalInterviews, positiveInterviews,
+    poolCandidates: poolCandidates.length, poolByCategory,
     jobs, candidates
   };
 }
@@ -362,6 +394,50 @@ function renderDashboard(raw) {
           <canvas id="donutChart" role="img" aria-label="Distribución de posiciones">Abiertas: ${s.openJobs.length}, Cerradas: ${s.closedJobs.length}, On Hold: ${s.holdJobs.length}.</canvas>
         </div>
       </div>
+    </div>
+
+    <div class="section-title">Pool de talento — futura referencia</div>
+    <div class="pool-summary-card">
+      <div class="pool-summary-stat">
+        <div class="pool-summary-val">${s.poolCandidates}</div>
+        <div class="pool-summary-lbl">candidatos listos para activar</div>
+      </div>
+      <div class="pool-summary-stat">
+        <div class="pool-summary-val">${s.poolByCategory.length}</div>
+        <div class="pool-summary-lbl">categorías representadas</div>
+      </div>
+      <div class="pool-summary-stat">
+        <div class="pool-summary-val">${pct(s.poolCandidates, s.total)}%</div>
+        <div class="pool-summary-lbl">del total de candidatos</div>
+      </div>
+    </div>
+    <div class="pool-grid">
+      ${s.poolByCategory.map(cat => {
+        const maxCount = Math.max(...cat.byLevel.map(l => l.count), 1);
+        const levelRows = cat.byLevel.map(l => `
+          <div class="pool-level-row">
+            <div class="pool-level-name">${l.level}</div>
+            <div class="pool-level-bar-track">
+              <div class="pool-level-bar-fill" style="width:${Math.round((l.count/maxCount)*100)}%"></div>
+            </div>
+            <div class="pool-level-count">${l.count}</div>
+          </div>`).join('');
+        const unleveledRow = cat.unleveled > 0 ? `
+          <div class="pool-level-row">
+            <div class="pool-level-name" style="color:var(--hint)">Sin nivel</div>
+            <div class="pool-level-bar-track">
+              <div class="pool-level-bar-fill" style="width:${Math.round((cat.unleveled/maxCount)*100)}%;background:var(--hint)"></div>
+            </div>
+            <div class="pool-level-count" style="color:var(--hint)">${cat.unleveled}</div>
+          </div>` : '';
+        return `<div class="pool-card">
+          <div class="pool-card-header">
+            <div class="pool-card-title">${cat.cat}</div>
+            <div class="pool-card-total">${cat.total} total</div>
+          </div>
+          <div class="pool-levels">${levelRows}${unleveledRow}</div>
+        </div>`;
+      }).join('') || '<div style="color:var(--hint);font-family:var(--mono);font-size:12px;padding:8px 0">Sin candidatos de futura referencia registrados</div>'}
     </div>
 
     <div class="section-title">Job openings</div>
