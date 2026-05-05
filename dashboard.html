@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recruitment Dashboard — Outpost QA</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f0f11; --surface: #17171a; --surface2: #1e1e22;
+    --border: rgba(255,255,255,0.06); --border2: rgba(255,255,255,0.12);
+    --text: #f0efe8; --muted: #888884; --hint: #4a4a48;
+    --blue: #4a8fff; --blue-dim: rgba(74,143,255,0.15);
+    --green: #3ecf8e; --green-dim: rgba(62,207,142,0.12);
+    --amber: #f5a623; --amber-dim: rgba(245,166,35,0.12);
+    --red: #ff5f5f; --red-dim: rgba(255,95,95,0.12);
+    --font: 'DM Sans', sans-serif; --mono: 'DM Mono', monospace;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg); z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo-mark {
+    width: 32px; height: 32px; background: var(--blue); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; font-weight: 500; color: #fff;
+  }
+  .header-title { font-size: 14px; font-weight: 500; }
+  .header-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 1px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--hint); }
+  .status-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-text { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .btn-refresh {
+    padding: 7px 14px; background: transparent; border: 1px solid var(--border2);
+    border-radius: 6px; color: var(--text); font-family: var(--font); font-size: 12px;
+    cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+  }
+  .btn-refresh:hover { background: var(--surface2); border-color: var(--blue); color: var(--blue); }
+  .btn-refresh:disabled { opacity: 0.4; cursor: not-allowed; }
+  .spin { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .main { padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
+
+  .section-title {
+    font-size: 10px; font-family: var(--mono); letter-spacing: 0.08em;
+    color: var(--hint); text-transform: uppercase; margin-bottom: 12px; margin-top: 28px;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px; margin-bottom: 8px;
+  }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px; position: relative; overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .kpi-card:hover { border-color: var(--border2); }
+  .kpi-card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    border-radius: 10px 10px 0 0; background: var(--accent, transparent);
+  }
+  .kpi-card.good { --accent: var(--green); }
+  .kpi-card.warn { --accent: var(--amber); }
+  .kpi-card.bad  { --accent: var(--red); }
+  .kpi-card.neutral { --accent: var(--blue); }
+  .kpi-label { font-size: 10px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.04em; margin-bottom: 10px; }
+  .kpi-value { font-size: 26px; font-weight: 600; line-height: 1; margin-bottom: 5px; }
+  .kpi-card.good .kpi-value { color: var(--green); }
+  .kpi-card.warn .kpi-value { color: var(--amber); }
+  .kpi-card.bad  .kpi-value { color: var(--red); }
+  .kpi-card.neutral .kpi-value { color: var(--blue); }
+  .kpi-card:not(.good):not(.warn):not(.bad):not(.neutral) .kpi-value { color: var(--text); }
+  .kpi-sub { font-size: 11px; color: var(--hint); line-height: 1.4; }
+
+  .goal-bar-wrap { margin-top: 8px; }
+  .goal-bar-track { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+  .goal-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+  .goal-bar-label { font-size: 10px; color: var(--hint); font-family: var(--mono); margin-top: 4px; }
+
+  .charts-row { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; margin-bottom: 14px; }
+  @media (max-width: 760px) { .charts-row { grid-template-columns: 1fr; } }
+
+  .chart-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px;
+  }
+  .chart-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .chart-desc { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 14px; }
+  .legend-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .legend-sq { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  .table-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px; margin-bottom: 14px; overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; padding: 0 12px 12px 0;
+    font-size: 10px; font-family: var(--mono); letter-spacing: 0.06em;
+    color: var(--hint); border-bottom: 1px solid var(--border); font-weight: 400;
+  }
+  tbody td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .badge {
+    display: inline-block; padding: 3px 8px; border-radius: 4px;
+    font-size: 10px; font-family: var(--mono); letter-spacing: 0.04em; font-weight: 500;
+  }
+  .badge-open   { background: var(--green-dim); color: var(--green); }
+  .badge-hold   { background: var(--amber-dim); color: var(--amber); }
+  .badge-closed { background: var(--border); color: var(--muted); }
+  .badge-blue   { background: var(--blue-dim); color: var(--blue); }
+
+  .insight-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--blue); border-radius: 0 10px 10px 0;
+    padding: 14px 18px; margin-bottom: 14px;
+    font-size: 13px; color: var(--muted); line-height: 1.7;
+  }
+  .insight-card strong { color: var(--text); font-weight: 500; }
+
+  .state-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 60vh; gap: 14px; color: var(--muted); font-family: var(--mono);
+    font-size: 13px; text-align: center;
+  }
+  .loader {
+    width: 36px; height: 36px; border: 2px solid var(--border2);
+    border-top-color: var(--blue); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  .error-msg { color: var(--red); }
+  .error-detail { font-size: 11px; color: var(--hint); max-width: 480px; line-height: 1.6; }
+
+  .last-updated { font-size: 11px; color: var(--hint); font-family: var(--mono); }
+  .top-bar { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo-mark">RC</div>
+    <div>
+      <div class="header-title">Recruitment Dashboard</div>
+      <div class="header-sub">outpost qa — zoho recruit</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">connecting...</span>
+    <button class="btn-refresh" id="btnRefresh" onclick="loadData()" disabled>
+      <span id="refreshIcon">↻</span> Refresh
+    </button>
+  </div>
+</div>
+
+<div class="main" id="mainContent">
+  <div class="state-screen">
+    <div class="loader"></div>
+    <span>Conectando con Zoho Recruit...</span>
+  </div>
+</div>
+
+<script>
+let funnelChart = null;
+let donutChart = null;
+
+function setStatus(state, text) {
+  document.getElementById('statusDot').className = 'status-dot' + (state === 'active' ? ' active' : '');
+  document.getElementById('statusText').textContent = text;
+}
+
+function pct(a, b) { return b === 0 ? 0 : Math.round((a / b) * 100); }
+
+function statusCls(val, good, warn, higherBetter = true) {
+  if (higherBetter) { return val >= good ? 'good' : val >= warn ? 'warn' : 'bad'; }
+  return val <= good ? 'good' : val <= warn ? 'warn' : 'bad';
+}
+
+function getWeekStart() {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff));
+}
+
+function processData({ candidates, jobs, interviews, events }) {
+  const total = candidates.length;
+
+  const apt = candidates.filter(c => {
+    const s = (c.Candidate_Status || '').toLowerCase();
+    return s === 'future reference' || s === 'qualified';
+  }).length;
+
+  const weekStart = getWeekStart();
+  const discoveryCalls = (events || []).filter(e =>
+    (e.Event_Title || '').toLowerCase().includes('discovery call')
+  );
+  const screeningCalls = discoveryCalls.length;
+  const screeningThisWeek = discoveryCalls.filter(e => {
+    const date = new Date(e.Start_DateTime1 || 0);
+    return date >= weekStart;
+  }).length;
+
+  const inReview = candidates.filter(c =>
+    (c.Candidate_Status || '').toLowerCase() === 'in review'
+  ).length;
+
+  const offered = candidates.filter(c =>
+    (c.Candidate_Stage || '').toLowerCase() === 'offer'
+  ).length;
+
+  const hired = candidates.filter(c =>
+    (c.Candidate_Stage || '').toLowerCase() === 'hired'
+  ).length;
+
+  const offerAcceptRate = pct(hired, offered);
+
+  const openJobs = jobs.filter(j => (j.Job_Status || '').toLowerCase().includes('open'));
+  const closedJobs = jobs.filter(j => {
+    const s = (j.Job_Status || '').toLowerCase();
+    return s.includes('close') || s.includes('filled') || s.includes('cerrad');
+  });
+  const holdJobs = jobs.filter(j => (j.Job_Status || '').toLowerCase().includes('hold'));
+  const cancelledJobs = jobs.filter(j => (j.Job_Status || '').toLowerCase().includes('cancel'));
+
+  const totalInterviews = interviews.length;
+  const positiveInterviews = interviews.filter(i =>
+    (i.Interview_Status || i.Status || '').toLowerCase().includes('move to next round')
+  ).length;
+
+  return {
+    total, apt, screeningCalls, screeningThisWeek,
+    inReview, offered, hired, offerAcceptRate,
+    openJobs, closedJobs, holdJobs, cancelledJobs,
+    totalInterviews, positiveInterviews,
+    jobs, candidates
+  };
+}
+
+function generateInsight(s) {
+  const lines = [];
+  const aptRate = pct(s.apt, s.total);
+  if (aptRate < 20) lines.push(`<strong>Aptitud baja (${aptRate}%):</strong> Menos de 1 de cada 5 candidatos califica como apto para Outpost QA — revisar fuentes de búsqueda o criterios de contacto inicial.`);
+  if (s.screeningThisWeek < 3) lines.push(`<strong>Screening calls esta semana (${s.screeningThisWeek}/3):</strong> Por debajo del estándar semanal. Quedan ${3 - s.screeningThisWeek} calls para llegar a la meta.`);
+  if (s.offerAcceptRate > 0 && s.offerAcceptRate < 70) lines.push(`<strong>Aceptación de oferta (${s.offerAcceptRate}%):</strong> Posible desalineación salarial o competencia de mercado en etapa final.`);
+  if (s.openJobs.length > 0 && s.inReview === 0) lines.push(`<strong>Sin candidatos en revisión:</strong> Hay ${s.openJobs.length} posición(es) abierta(s) sin pipeline activo.`);
+  if (lines.length === 0) lines.push('<strong>Todo en orden.</strong> Los indicadores están dentro de los rangos esperados para esta semana.');
+  return lines.join('<br><br>');
+}
+
+function renderDashboard(raw) {
+  const s = processData(raw);
+  const aptRate = pct(s.apt, s.total);
+  const screeningRate = pct(s.screeningCalls, s.total);
+  const interviewPositiveRate = pct(s.positiveInterviews, s.totalInterviews);
+  const weekGoalPct = Math.min(100, pct(s.screeningThisWeek, 3));
+
+  const html = `
+    <div class="top-bar">
+      <span class="last-updated" id="lastUpdated"></span>
+    </div>
+
+    <div class="insight-card">${generateInsight(s)}</div>
+
+    <div class="section-title">Pipeline de candidatos</div>
+    <div class="kpi-grid">
+      <div class="kpi-card neutral">
+        <div class="kpi-label">TOTAL CANDIDATOS</div>
+        <div class="kpi-value">${s.total}</div>
+        <div class="kpi-sub">en base de datos</div>
+      </div>
+      <div class="kpi-card ${statusCls(aptRate, 25, 15)}">
+        <div class="kpi-label">APTOS OUTPOST QA</div>
+        <div class="kpi-value">${s.apt}</div>
+        <div class="kpi-sub">${aptRate}% del total — Future Reference o Qualified</div>
+      </div>
+      <div class="kpi-card ${statusCls(screeningRate, 30, 15)}">
+        <div class="kpi-label">SCREENING CALLS</div>
+        <div class="kpi-value">${s.screeningCalls}</div>
+        <div class="kpi-sub">${screeningRate}% de contactados con call realizada</div>
+      </div>
+      <div class="kpi-card ${s.inReview > 0 ? 'good' : 'warn'}">
+        <div class="kpi-label">EN REVISIÓN (IN REVIEW)</div>
+        <div class="kpi-value">${s.inReview}</div>
+        <div class="kpi-sub">candidatos activos en proceso</div>
+      </div>
+      <div class="kpi-card ${s.offered > 0 ? 'neutral' : ''}">
+        <div class="kpi-label">OFERTAS ENVIADAS</div>
+        <div class="kpi-value">${s.offered}</div>
+        <div class="kpi-sub">stage = Offer en módulo candidatos</div>
+      </div>
+      <div class="kpi-card ${s.hired > 0 ? 'good' : ''}">
+        <div class="kpi-label">CONTRATADOS</div>
+        <div class="kpi-value">${s.hired}</div>
+        <div class="kpi-sub">stage = Hired en módulo candidatos</div>
+      </div>
+      <div class="kpi-card ${statusCls(s.offerAcceptRate, 70, 50)}">
+        <div class="kpi-label">ACEPTACIÓN DE OFERTA</div>
+        <div class="kpi-value">${s.offered > 0 ? s.offerAcceptRate + '%' : '—'}</div>
+        <div class="kpi-sub">${s.hired} contratados de ${s.offered} ofertas</div>
+      </div>
+    </div>
+
+    <div class="section-title">Meta personal semanal</div>
+    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px,1fr))">
+      <div class="kpi-card ${statusCls(s.screeningThisWeek, 3, 2)}">
+        <div class="kpi-label">SCREENING CALLS ESTA SEMANA</div>
+        <div class="kpi-value">${s.screeningThisWeek} <span style="font-size:14px;font-weight:400;color:var(--muted)">/ 3</span></div>
+        <div class="goal-bar-wrap">
+          <div class="goal-bar-track">
+            <div class="goal-bar-fill" style="width:${weekGoalPct}%;background:${s.screeningThisWeek >= 3 ? 'var(--green)' : s.screeningThisWeek >= 2 ? 'var(--amber)' : 'var(--red)'}"></div>
+          </div>
+          <div class="goal-bar-label">${weekGoalPct}% de la meta semanal</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Entrevistas</div>
+    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px,1fr))">
+      <div class="kpi-card neutral">
+        <div class="kpi-label">TOTAL ENTREVISTAS</div>
+        <div class="kpi-value">${s.totalInterviews}</div>
+        <div class="kpi-sub">registradas en Zoho</div>
+      </div>
+      <div class="kpi-card ${statusCls(interviewPositiveRate, 50, 30)}">
+        <div class="kpi-label">RESULTADO POSITIVO</div>
+        <div class="kpi-value">${s.positiveInterviews}</div>
+        <div class="kpi-sub">${interviewPositiveRate}% — Move to Next Round</div>
+      </div>
+    </div>
+
+    <div class="section-title">Visualizaciones</div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Funnel de conversión</div>
+        <div class="chart-desc">De contactados a contratados</div>
+        <div class="legend-row">
+          <div class="legend-item"><span class="legend-sq" style="background:#4a8fff"></span>Candidatos</div>
+          <div class="legend-item"><span class="legend-sq" style="background:#3ecf8e"></span>Conversión %</div>
+        </div>
+        <div style="position:relative;width:100%;height:240px;">
+          <canvas id="funnelChart" role="img" aria-label="Funnel de conversión">Funnel de ${s.total} candidatos a ${s.hired} contratados.</canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Posiciones por estado</div>
+        <div class="chart-desc">Distribución de vacantes activas</div>
+        <div style="position:relative;width:100%;height:240px;">
+          <canvas id="donutChart" role="img" aria-label="Distribución de posiciones">Abiertas: ${s.openJobs.length}, Cerradas: ${s.closedJobs.length}, On Hold: ${s.holdJobs.length}.</canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Job openings</div>
+    <div class="table-card">
+      <table>
+        <thead><tr>
+          <th>POSICIÓN</th><th>ÁREA</th><th>ESTADO</th><th>FECHA</th>
+        </tr></thead>
+        <tbody>
+          ${raw.jobs.slice(0, 10).map(j => {
+            const st = (j.Job_Status || '').toLowerCase();
+            const isOpen = st.includes('open');
+            const isHold = st.includes('hold');
+            const isCancelled = st.includes('cancel');
+            const cls = isOpen ? 'badge-open' : isHold ? 'badge-hold' : isCancelled ? 'badge' : 'badge-closed';
+            const label = isOpen ? 'Open' : isHold ? 'On Hold' : isCancelled ? 'Cancelled' : 'Closed';
+            const date = j.Date_Opened ? new Date(j.Date_Opened).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
+            return `<tr>
+              <td style="font-weight:500">${j.Job_Opening_Name || '—'}</td>
+              <td style="color:var(--muted)">${j.Department || '—'}</td>
+              <td><span class="badge ${cls}">${label}</span></td>
+              <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${date}</td>
+            </tr>`;
+          }).join('') || '<tr><td colspan="4" style="color:var(--hint);font-family:var(--mono);font-size:12px;padding:16px 0">Sin posiciones registradas</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  document.getElementById('mainContent').innerHTML = html;
+
+  if (funnelChart) funnelChart.destroy();
+  const funnelLabels = ['Contactados', 'Con call', 'Aptos', 'In Review', 'Ofertas', 'Contratados'];
+  const funnelData = [s.total, s.screeningCalls, s.apt, s.inReview, s.offered, s.hired];
+  const convRates = [
+    100,
+    pct(s.screeningCalls, s.total),
+    pct(s.apt, s.total),
+    pct(s.inReview, s.apt || 1),
+    pct(s.offered, s.inReview || 1),
+    pct(s.hired, s.offered || 1)
+  ];
+
+  funnelChart = new Chart(document.getElementById('funnelChart'), {
+    type: 'bar',
+    data: {
+      labels: funnelLabels,
+      datasets: [
+        { label: 'Candidatos', data: funnelData, backgroundColor: 'rgba(74,143,255,0.7)', borderRadius: 4, yAxisID: 'y' },
+        { label: 'Conversión %', data: convRates, type: 'line', tension: 0.3, pointRadius: 4, borderColor: '#3ecf8e', backgroundColor: '#3ecf8e', borderWidth: 2, fill: false, yAxisID: 'y2' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#888884', font: { size: 10, family: 'DM Mono' }, autoSkip: false, maxRotation: 30 }, grid: { display: false }, border: { color: 'rgba(255,255,255,0.06)' } },
+        y: { position: 'left', ticks: { color: '#888884', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y2: { position: 'right', min: 0, max: 100, ticks: { callback: v => v + '%', color: '#888884', font: { size: 10 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(document.getElementById('donutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Abiertas', 'Cerradas', 'On Hold', 'Canceladas'],
+      datasets: [{
+        data: [s.openJobs.length, s.closedJobs.length, s.holdJobs.length, s.cancelledJobs.length],
+        backgroundColor: ['rgba(74,143,255,0.8)', 'rgba(62,207,142,0.7)', 'rgba(245,166,35,0.7)', 'rgba(255,95,95,0.6)'],
+        borderColor: ['#4a8fff', '#3ecf8e', '#f5a623', '#ff5f5f'],
+        borderWidth: 1, hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#888884', font: { size: 11, family: 'DM Mono' }, boxWidth: 10, padding: 14 } }
+      },
+      cutout: '62%'
+    }
+  });
+
+  const el = document.getElementById('lastUpdated');
+  if (el) el.textContent = `Actualizado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+async function loadData() {
+  const btn = document.getElementById('btnRefresh');
+  const icon = document.getElementById('refreshIcon');
+  btn.disabled = true;
+  icon.className = 'spin';
+  setStatus('', 'connecting...');
+
+  try {
+    const res = await fetch('/api/data');
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    setStatus('active', 'connected');
+    renderDashboard(data);
+    btn.disabled = false;
+  } catch (err) {
+    setStatus('', 'error');
+    document.getElementById('mainContent').innerHTML = `
+      <div class="state-screen">
+        <div style="color:var(--red);font-size:28px">⚠</div>
+        <div class="error-msg">Connection failed</div>
+        <div class="error-detail">${err.message}</div>
+        <button class="btn-refresh" style="margin-top:12px" onclick="loadData()">Try again</button>
+      </div>`;
+  } finally {
+    icon.className = '';
+    icon.textContent = '↻';
+    btn.disabled = false;
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>

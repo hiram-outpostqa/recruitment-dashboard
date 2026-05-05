@@ -1,0 +1,12 @@
+{
+  "name": "recruitment-dashboard",
+  "version": "1.0.0",
+  "description": "Recruitment KPI Dashboard — Outpost QA",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
