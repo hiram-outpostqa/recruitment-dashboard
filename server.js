@@ -92,14 +92,15 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname === '/api/data') {
     try {
       const token = await getToken();
-      const [candidates, jobs, interviews, events] = await Promise.all([
-        fetchAllPages('Candidates', token, 'id,Full_Name,Candidate_Status,Candidate_Stage,Call_Sumarize,Candidate_Category,Leveling,City,State,Current_Employer,Created_Time,Modified_Time'),
+      const [candidates, jobs, interviews, events, applications] = await Promise.all([
+        fetchAllPages('Candidates', token, 'id,Full_Name,Candidate_Status,Candidate_Stage,Call_Sumarize,Candidate_Category,Leveling,City,State,Current_Employer,Gender,Current_Salary,Created_Time,Modified_Time'),
         fetchAllPages('JobOpenings', token, 'id,Job_Opening_Name,Job_Status,Department,Date_Opened'),
         fetchAllPages('Interviews', token, 'id,Interview_Status,Candidate_Name').catch(() => []),
         fetchAllPages('Events', token, 'id,Event_Title,Start_DateTime1,End_DateTime1').catch(() => []),
+        fetchAllPages('Applications', token, 'id,$Candidate_Id,Application_Status,Hiring_Pipeline,Created_Time,Job_Opening_Name').catch(() => []),
       ]);
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ candidates, jobs, interviews, events }));
+      res.end(JSON.stringify({ candidates, jobs, interviews, events, applications }));
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));

@@ -336,6 +336,57 @@ function processData({ candidates, jobs, interviews, events }) {
   const topEmployersAll = topN(candidates, 'Current_Employer', 10);
   const topEmployersPool = topN(poolCandidates, 'Current_Employer', 10);
 
+  // Gender distribution
+  const genderAll = { male: 0, female: 0, other: 0 };
+  const genderPool = { male: 0, female: 0, other: 0 };
+  candidates.forEach(c => {
+    const g = (c.Gender || '').toLowerCase();
+    const bucket = g === 'male' ? 'male' : g === 'female' ? 'female' : 'other';
+    genderAll[bucket]++;
+    if ((c.Candidate_Status || '').toLowerCase() === 'future reference') genderPool[bucket]++;
+  });
+
+  // Candidates by category (all)
+  const catAll = CATEGORIES.map(cat => ({
+    cat, count: candidates.filter(c => (c.Candidate_Category || '').trim() === cat).length
+  })).filter(c => c.count > 0).sort((a,b) => b.count - a.count).slice(0, 8);
+
+  // New candidates by month (last 6 months)
+  const now = new Date();
+  const monthlyNew = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+    const label = d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+    const count = candidates.filter(c => {
+      const t = new Date(c.Created_Time || 0);
+      return t >= d && t < end;
+    }).length;
+    monthlyNew.push({ label, count });
+  }
+
+  // Applications pipeline stats
+  const apps = raw.applications || [];
+  const activeApps = apps.filter(a => a.Application_Status === 'Associated' || a.Application_Status === 'Forward-to-Onboarding');
+  const hiredApps = apps.filter(a => a.Hiring_Pipeline === 'Hired');
+
+  // Avg days from candidate creation to application creation
+  const appDays = apps.filter(a => a.Created_Time && a.$Candidate_Id).map(a => {
+    const cand = candidates.find(c => c.id === a.$Candidate_Id);
+    if (!cand || !cand.Created_Time) return null;
+    const diff = (new Date(a.Created_Time) - new Date(cand.Created_Time)) / (1000 * 60 * 60 * 24);
+    return diff >= 0 ? diff : null;
+  }).filter(d => d !== null);
+  const avgDaysToApp = appDays.length > 0 ? Math.round(appDays.reduce((a,b) => a+b, 0) / appDays.length) : 0;
+
+  // Reactivated candidates: Future Reference who now have an active application
+  const reactivated = poolCandidates.filter(c =>
+    apps.some(a => a.$Candidate_Id === c.id && (a.Application_Status === 'Associated' || a.Application_Status === 'Forward-to-Onboarding'))
+  ).length;
+
+  // Discovery call rate: events with discovery call vs total candidates
+  const discoveryCallRate = pct(screeningCalls, total);
+
   return {
     total, apt, screeningCalls, screeningThisWeek,
     inReview, offered, hired, offerAcceptRate,
@@ -343,6 +394,9 @@ function processData({ candidates, jobs, interviews, events }) {
     totalInterviews, positiveInterviews,
     poolCandidates: poolCandidates.length, poolByCategory,
     topCitiesAll, topCitiesPool, topEmployersAll, topEmployersPool,
+    genderAll, genderPool, catAll, monthlyNew,
+    activeApps: activeApps.length, hiredApps: hiredApps.length,
+    avgDaysToApp, reactivated, discoveryCallRate,
     jobs, candidates
   };
 }
@@ -439,6 +493,35 @@ function renderDashboard(raw) {
       </div>
     </div>
 
+    <div class="section-title">Pipeline de contratación — applications</div>
+    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px,1fr))">
+      <div class="kpi-card neutral">
+        <div class="kpi-label">APPLICATIONS ACTIVAS</div>
+        <div class="kpi-value">${s.activeApps}</div>
+        <div class="kpi-sub">Associated + Forward-to-Onboarding</div>
+      </div>
+      <div class="kpi-card ${s.hiredApps > 0 ? 'good' : ''}">
+        <div class="kpi-label">CONTRATADOS VÍA APP</div>
+        <div class="kpi-value">${s.hiredApps}</div>
+        <div class="kpi-sub">pipeline = Hired</div>
+      </div>
+      <div class="kpi-card neutral">
+        <div class="kpi-label">DÍAS PROMEDIO A APP</div>
+        <div class="kpi-value">${s.avgDaysToApp}</div>
+        <div class="kpi-sub">desde creación de candidato a application</div>
+      </div>
+      <div class="kpi-card ${s.reactivated > 0 ? 'good' : 'warn'}">
+        <div class="kpi-label">CANDIDATOS REACTIVADOS</div>
+        <div class="kpi-value">${s.reactivated}</div>
+        <div class="kpi-sub">Future Reference con application activa</div>
+      </div>
+      <div class="kpi-card neutral">
+        <div class="kpi-label">TASA DE AGENDADO</div>
+        <div class="kpi-value">${s.discoveryCallRate}%</div>
+        <div class="kpi-sub">${s.screeningCalls} de ${s.total} agendaron Discovery Call</div>
+      </div>
+    </div>
+
     <div class="section-title">Visualizaciones — candidatos generales</div>
     <div class="charts-row">
       <div class="chart-card">
@@ -514,6 +597,30 @@ function renderDashboard(raw) {
 
     <div class="charts-row" style="margin-bottom:14px">
       <div class="chart-card">
+        <div class="chart-title">Candidatos nuevos por mes</div>
+        <div class="chart-desc">Volumen de prospección — últimos 6 meses</div>
+        <div style="position:relative;width:100%;height:240px;">
+          <canvas id="monthlyChart" role="img" aria-label="Candidatos nuevos por mes"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Distribución por género — general</div>
+        <div class="chart-desc">Todos los candidatos</div>
+        <div style="position:relative;width:100%;height:240px;">
+          <canvas id="genderAllChart" role="img" aria-label="Distribución por género general"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-bottom:14px">
+      <div class="chart-title">Candidatos por categoría</div>
+      <div class="chart-desc">Top 8 categorías — todos los candidatos</div>
+      <div style="position:relative;width:100%;height:${Math.max(200, s.catAll.length * 36)}px;">
+        <canvas id="catAllChart" role="img" aria-label="Candidatos por categoría"></canvas>
+      </div>
+    </div>
+
+    <div class="charts-row" style="margin-bottom:14px">
+      <div class="chart-card">
         <div class="chart-title">Top 5 ciudades — Future Reference</div>
         <div class="chart-desc">Distribución geográfica del pool de talento</div>
         <div style="position:relative;width:100%;height:240px;">
@@ -521,11 +628,18 @@ function renderDashboard(raw) {
         </div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Top 10 empresas — Future Reference</div>
-        <div class="chart-desc">De dónde provienen tus candidatos aptos</div>
+        <div class="chart-title">Distribución por género — Future Reference</div>
+        <div class="chart-desc">Pool de talento apto</div>
         <div style="position:relative;width:100%;height:240px;">
-          <canvas id="employersPoolChart" role="img" aria-label="Top empresas pool de talento"></canvas>
+          <canvas id="genderPoolChart" role="img" aria-label="Distribución por género pool"></canvas>
         </div>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-bottom:14px">
+      <div class="chart-title">Top 10 empresas — Future Reference</div>
+      <div class="chart-desc">De dónde provienen tus candidatos aptos</div>
+      <div style="position:relative;width:100%;height:${Math.max(200, s.topEmployersPool.length * 32)}px;">
+        <canvas id="employersPoolChart" role="img" aria-label="Top empresas pool de talento"></canvas>
       </div>
     </div>
 
@@ -647,6 +761,64 @@ function renderDashboard(raw) {
         y: { ticks: { color: '#6b6b67', font: { size: 10, family: 'DM Mono' } }, grid: { display: false } }
       }
     }
+  });
+
+  // Monthly new candidates chart
+  if (window._monthlyChart) window._monthlyChart.destroy();
+  window._monthlyChart = new Chart(document.getElementById('monthlyChart'), {
+    type: 'bar',
+    data: {
+      labels: s.monthlyNew.map(m => m.label),
+      datasets: [{ label: 'Nuevos', data: s.monthlyNew.map(m => m.count), backgroundColor: 'rgba(74,143,255,0.7)', borderRadius: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b6b67', font: { size: 11, family: 'DM Mono' } }, grid: { display: false } },
+        y: { ticks: { color: '#6b6b67', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.06)' } }
+      }
+    }
+  });
+
+  // Gender all chart
+  if (window._genderAllChart) window._genderAllChart.destroy();
+  window._genderAllChart = new Chart(document.getElementById('genderAllChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Hombre (' + s.genderAll.male + ')', 'Mujer (' + s.genderAll.female + ')', 'N/D (' + s.genderAll.other + ')'],
+      datasets: [{ data: [s.genderAll.male, s.genderAll.female, s.genderAll.other], backgroundColor: ['rgba(74,143,255,0.8)', 'rgba(255,95,95,0.8)', 'rgba(168,85,247,0.5)'], borderWidth: 1, hoverOffset: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'left', labels: { color: '#6b6b67', font: { size: 12, family: 'DM Mono' }, boxWidth: 12, padding: 14 } } }, cutout: '55%' }
+  });
+
+  // Category all chart
+  if (window._catAllChart) window._catAllChart.destroy();
+  window._catAllChart = new Chart(document.getElementById('catAllChart'), {
+    type: 'bar',
+    data: {
+      labels: s.catAll.map(c => c.cat),
+      datasets: [{ label: 'Candidatos', data: s.catAll.map(c => c.count), backgroundColor: 'rgba(74,143,255,0.7)', borderRadius: 4 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b6b67', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+        y: { ticks: { color: '#6b6b67', font: { size: 11, family: 'DM Mono' } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Gender pool chart
+  if (window._genderPoolChart) window._genderPoolChart.destroy();
+  window._genderPoolChart = new Chart(document.getElementById('genderPoolChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Hombre (' + s.genderPool.male + ')', 'Mujer (' + s.genderPool.female + ')', 'N/D (' + s.genderPool.other + ')'],
+      datasets: [{ data: [s.genderPool.male, s.genderPool.female, s.genderPool.other], backgroundColor: ['rgba(74,143,255,0.8)', 'rgba(255,95,95,0.8)', 'rgba(168,85,247,0.5)'], borderWidth: 1, hoverOffset: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'left', labels: { color: '#6b6b67', font: { size: 12, family: 'DM Mono' }, boxWidth: 12, padding: 14 } } }, cutout: '55%' }
   });
 
   const el = document.getElementById('lastUpdated');
