@@ -97,7 +97,7 @@ const server = http.createServer(async (req, res) => {
         fetchAllPages('JobOpenings', token, 'id,Job_Opening_Name,Job_Status,Department,Date_Opened'),
         fetchAllPages('Interviews', token, 'id,Interview_Status,Candidate_Name').catch(() => []),
         fetchAllPages('Events', token, 'id,Event_Title,Start_DateTime1,End_DateTime1').catch(() => []),
-        fetchAllPages('Applications', token, 'id,$Candidate_Id,Application_Status,Hiring_Pipeline,Created_Time,Job_Opening_Name').catch(() => []),
+        fetchAllPages('Applications', token, 'id,$Candidate_Id,Full_Name,Application_Status,Hiring_Pipeline,Created_Time,Modified_Time,Job_Opening_Name').catch(() => []),
       ]);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ candidates, jobs, interviews, events, applications }));
