@@ -271,12 +271,27 @@ function processData({ candidates, jobs, interviews, events }) {
     return { cat, total: members.length, byLevel, unleveled };
   }).filter(Boolean);
 
+  // Top cities - all candidates
+  function topN(arr, field, n) {
+    const counts = {};
+    arr.forEach(c => {
+      const val = (c[field] || '').trim();
+      if (val) counts[val] = (counts[val] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, n).map(([label, count]) => ({ label, count }));
+  }
+  const topCitiesAll = topN(candidates, 'City', 5);
+  const topCitiesPool = topN(poolCandidates, 'City', 5);
+  const topEmployersAll = topN(candidates, 'Current_Employer', 10);
+  const topEmployersPool = topN(poolCandidates, 'Current_Employer', 10);
+
   return {
     total, apt, screeningCalls, screeningThisWeek,
     inReview, offered, hired, offerAcceptRate,
     openJobs, closedJobs, holdJobs, cancelledJobs,
     totalInterviews, positiveInterviews,
     poolCandidates: poolCandidates.length, poolByCategory,
+    topCitiesAll, topCitiesPool, topEmployersAll, topEmployersPool,
     jobs, candidates
   };
 }
@@ -373,7 +388,7 @@ function renderDashboard(raw) {
       </div>
     </div>
 
-    <div class="section-title">Visualizaciones</div>
+    <div class="section-title">Visualizaciones — candidatos generales</div>
     <div class="charts-row">
       <div class="chart-card">
         <div class="chart-title">Funnel de conversión</div>
@@ -387,11 +402,18 @@ function renderDashboard(raw) {
         </div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Posiciones por estado</div>
-        <div class="chart-desc">Distribución de vacantes activas</div>
+        <div class="chart-title">Top 5 ciudades — todos los candidatos</div>
+        <div class="chart-desc">De dónde vienen geográficamente</div>
         <div style="position:relative;width:100%;height:240px;">
-          <canvas id="donutChart" role="img" aria-label="Distribución de posiciones">Abiertas: ${s.openJobs.length}, Cerradas: ${s.closedJobs.length}, On Hold: ${s.holdJobs.length}.</canvas>
+          <canvas id="citiesAllChart" role="img" aria-label="Top ciudades todos los candidatos"></canvas>
         </div>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-bottom:14px">
+      <div class="chart-title">Top 10 empresas de origen — todos los candidatos</div>
+      <div class="chart-desc">Inteligencia competitiva — de dónde se fugan los mejores talentos</div>
+      <div style="position:relative;width:100%;height:${Math.max(200, s.topEmployersAll.length * 32)}px;">
+        <canvas id="employersAllChart" role="img" aria-label="Top empresas todos los candidatos"></canvas>
       </div>
     </div>
 
@@ -437,6 +459,23 @@ function renderDashboard(raw) {
           <div class="pool-levels">${levelRows}${unleveledRow}</div>
         </div>`;
       }).join('') || '<div style="color:var(--hint);font-family:var(--mono);font-size:12px;padding:8px 0">Sin candidatos de futura referencia registrados</div>'}
+    </div>
+
+    <div class="charts-row" style="margin-bottom:14px">
+      <div class="chart-card">
+        <div class="chart-title">Top 5 ciudades — Future Reference</div>
+        <div class="chart-desc">Distribución geográfica del pool de talento</div>
+        <div style="position:relative;width:100%;height:240px;">
+          <canvas id="citiesPoolChart" role="img" aria-label="Top ciudades pool de talento"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Top 10 empresas — Future Reference</div>
+        <div class="chart-desc">De dónde provienen tus candidatos aptos</div>
+        <div style="position:relative;width:100%;height:240px;">
+          <canvas id="employersPoolChart" role="img" aria-label="Top empresas pool de talento"></canvas>
+        </div>
+      </div>
     </div>
 
     <div class="section-title">Job openings</div>
@@ -500,24 +539,62 @@ function renderDashboard(raw) {
     }
   });
 
-  if (donutChart) donutChart.destroy();
-  donutChart = new Chart(document.getElementById('donutChart'), {
+  // Cities All - Pie chart
+  if (window._citiesAllChart) window._citiesAllChart.destroy();
+  const CITY_COLORS = ['rgba(74,143,255,0.8)','rgba(62,207,142,0.8)','rgba(245,166,35,0.8)','rgba(255,95,95,0.8)','rgba(168,85,247,0.8)'];
+  window._citiesAllChart = new Chart(document.getElementById('citiesAllChart'), {
     type: 'doughnut',
     data: {
-      labels: ['Abiertas', 'Cerradas', 'On Hold', 'Canceladas'],
-      datasets: [{
-        data: [s.openJobs.length, s.closedJobs.length, s.holdJobs.length, s.cancelledJobs.length],
-        backgroundColor: ['rgba(74,143,255,0.8)', 'rgba(62,207,142,0.7)', 'rgba(245,166,35,0.7)', 'rgba(255,95,95,0.6)'],
-        borderColor: ['#4a8fff', '#3ecf8e', '#f5a623', '#ff5f5f'],
-        borderWidth: 1, hoverOffset: 4
-      }]
+      labels: s.topCitiesAll.map(c => c.label),
+      datasets: [{ data: s.topCitiesAll.map(c => c.count), backgroundColor: CITY_COLORS, borderColor: CITY_COLORS.map(c => c.replace('0.8','1')), borderWidth: 1, hoverOffset: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#888884', font: { size: 10, family: 'DM Mono' }, boxWidth: 8, padding: 10 } } }, cutout: '55%' }
+  });
+
+  // Employers All - Horizontal bar
+  if (window._employersAllChart) window._employersAllChart.destroy();
+  window._employersAllChart = new Chart(document.getElementById('employersAllChart'), {
+    type: 'bar',
+    data: {
+      labels: s.topEmployersAll.map(e => e.label),
+      datasets: [{ label: 'Candidatos', data: s.topEmployersAll.map(e => e.count), backgroundColor: 'rgba(74,143,255,0.7)', borderRadius: 4 }]
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { color: '#888884', font: { size: 11, family: 'DM Mono' }, boxWidth: 10, padding: 14 } }
-      },
-      cutout: '62%'
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#888884', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#888884', font: { size: 10, family: 'DM Mono' } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Cities Pool - Pie chart
+  if (window._citiesPoolChart) window._citiesPoolChart.destroy();
+  window._citiesPoolChart = new Chart(document.getElementById('citiesPoolChart'), {
+    type: 'doughnut',
+    data: {
+      labels: s.topCitiesPool.map(c => c.label),
+      datasets: [{ data: s.topCitiesPool.map(c => c.count), backgroundColor: ['rgba(62,207,142,0.8)','rgba(74,143,255,0.8)','rgba(245,166,35,0.8)','rgba(255,95,95,0.8)','rgba(168,85,247,0.8)'], borderWidth: 1, hoverOffset: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#888884', font: { size: 10, family: 'DM Mono' }, boxWidth: 8, padding: 10 } } }, cutout: '55%' }
+  });
+
+  // Employers Pool - Horizontal bar
+  if (window._employersPoolChart) window._employersPoolChart.destroy();
+  window._employersPoolChart = new Chart(document.getElementById('employersPoolChart'), {
+    type: 'bar',
+    data: {
+      labels: s.topEmployersPool.map(e => e.label),
+      datasets: [{ label: 'Candidatos', data: s.topEmployersPool.map(e => e.count), backgroundColor: 'rgba(62,207,142,0.7)', borderRadius: 4 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#888884', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#888884', font: { size: 10, family: 'DM Mono' } }, grid: { display: false } }
+      }
     }
   });
 
