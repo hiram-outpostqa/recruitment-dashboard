@@ -451,9 +451,9 @@ function renderDashboard(raw) {
         <div class="kpi-sub">en base de datos</div>
       </div>
       <div class="kpi-card ${s.available > 0 ? 'good' : 'neutral'}">
-        <div class="kpi-label">DISPONIBLES AHORA</div>
+        <div class="kpi-label">SIN EMPLEO ACTUAL</div>
         <div class="kpi-value">${s.available}</div>
-        <div class="kpi-sub">${pct(s.available, s.total)}% del total — Unemployed o Immediate</div>
+        <div class="kpi-sub">${pct(s.available, s.total)}% del total — Availability: Unemployed / Immediate</div>
       </div>
       <div class="kpi-card ${statusCls(aptRate, 25, 15)}">
         <div class="kpi-label">APTOS OUTPOST QA</div>
@@ -593,7 +593,7 @@ function renderDashboard(raw) {
       </div>
       <div class="pool-summary-stat">
         <div class="pool-summary-val">${s.availablePool}</div>
-        <div class="pool-summary-lbl">disponibles ahora (Unemployed/Immediate)</div>
+        <div class="pool-summary-lbl">sin empleo actual en el pool</div>
       </div>
     </div>
     <div class="pool-grid">
