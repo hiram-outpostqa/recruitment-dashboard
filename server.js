@@ -98,8 +98,8 @@ const server = http.createServer(async (req, res) => {
       const [candidates, jobs, interviews, events] = await Promise.all([
         fetchAllPages('Candidates', token, 'id,Full_Name,Candidate_Status,Candidate_Stage,Call_Sumarize,Candidate_Category,Leveling,City,State,Current_Employer,Created_Time,Modified_Time').then(r => { console.log('Candidates:', r.length); return r; }),
         fetchAllPages('JobOpenings', token, 'id,Job_Opening_Name,Job_Status,Department,Date_Opened').then(r => { console.log('Jobs:', r.length); return r; }),
-        fetchAllPages('Interviews', token, 'id,Interview_Status,Candidate_Name').then(r => { console.log('Interviews:', r.length); return r; }),
-        fetchAllPages('Events', token, 'id,Event_Title,Start_DateTime1,End_DateTime1').catch((e) => { console.log('Events error:', e.message); return []; }),
+        fetchAllPages('Interviews', token, 'id,Interview_Status,Candidate_Name').then(r => { console.log('Interviews:', r.length); return r; }).catch((e) => { console.log('Interviews error:', e.message); return []; }),
+        fetchAllPages('Events', token, 'id,Event_Title,Start_DateTime1,End_DateTime1').then(r => { console.log('Events:', r.length); return r; }).catch((e) => { console.log('Events error:', e.message); return []; }),
       ]);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ candidates, jobs, interviews, events }));
