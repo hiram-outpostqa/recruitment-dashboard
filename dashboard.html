@@ -212,7 +212,7 @@ function getWeekStart() {
   return new Date(d.setDate(diff));
 }
 
-function processData({ candidates, jobs, interviews, events }) {
+function processData({ candidates, jobs, interviews, events, applications }) {
   const total = candidates.length;
 
   const apt = candidates.filter(c =>
@@ -366,7 +366,7 @@ function processData({ candidates, jobs, interviews, events }) {
   }
 
   // Applications pipeline stats
-  const apps = raw.applications || [];
+  const apps = applications || [];
   const activeApps = apps.filter(a => a.Application_Status === 'Associated' || a.Application_Status === 'Forward-to-Onboarding');
   const hiredApps = apps.filter(a => a.Hiring_Pipeline === 'Hired');
 
