@@ -473,93 +473,14 @@ function renderDashboard(raw) {
 
     <div class="insight-card">${generateInsight(s)}</div>
 
-    <div class="section-divider">
-      <div class="section-divider-icon" style="background:rgba(74,143,255,0.15)">📊</div>
-      <div>
-        <div class="section-divider-title">Pipeline de candidatos</div>
-        <div class="section-divider-sub">Vista general de todos los candidatos en base de datos</div>
-      </div>
-    </div>
-    <div class="section-title" style="display:none">Pipeline de candidatos</div>
-    <div class="kpi-grid">
-      <div class="kpi-card neutral">
-        <div class="kpi-label">TOTAL CANDIDATOS</div>
-        <div class="kpi-value">${s.total}</div>
-        <div class="kpi-sub">en base de datos</div>
-      </div>
-      <div class="kpi-card ${s.available > 0 ? 'good' : 'neutral'}">
-        <div class="kpi-label">SIN EMPLEO ACTUAL</div>
-        <div class="kpi-value">${s.available}</div>
-        <div class="kpi-sub">${pct(s.available, s.total)}% del total — Availability: Unemployed / Immediate</div>
-      </div>
-      <div class="kpi-card ${statusCls(aptRate, 25, 15)}">
-        <div class="kpi-label">APTOS OUTPOST QA</div>
-        <div class="kpi-value">${s.apt}</div>
-        <div class="kpi-sub">${aptRate}% del total — status = Future Reference</div>
-      </div>
-      <div class="kpi-card ${statusCls(screeningRate, 30, 15)}">
-        <div class="kpi-label">SCREENING CALLS</div>
-        <div class="kpi-value">${s.screeningCalls}</div>
-        <div class="kpi-sub">${screeningRate}% de contactados con call realizada</div>
-      </div>
-      <div class="kpi-card ${s.inReview > 0 ? 'good' : 'warn'}">
-        <div class="kpi-label">EN REVISIÓN (IN REVIEW)</div>
-        <div class="kpi-value">${s.inReview}</div>
-        <div class="kpi-sub">candidatos activos en proceso</div>
-      </div>
-      <div class="kpi-card ${s.offered > 0 ? 'neutral' : ''}">
-        <div class="kpi-label">OFERTAS ENVIADAS</div>
-        <div class="kpi-value">${s.offered}</div>
-        <div class="kpi-sub">stage = Offer en módulo candidatos</div>
-      </div>
-      <div class="kpi-card ${s.hired > 0 ? 'good' : ''}">
-        <div class="kpi-label">CONTRATADOS</div>
-        <div class="kpi-value">${s.hired}</div>
-        <div class="kpi-sub">stage = Hired en módulo candidatos</div>
-      </div>
-      <div class="kpi-card ${statusCls(s.offerAcceptRate, 70, 50)}">
-        <div class="kpi-label">ACEPTACIÓN DE OFERTA</div>
-        <div class="kpi-value">${s.offered > 0 ? s.offerAcceptRate + '%' : '—'}</div>
-        <div class="kpi-sub">${s.hired} contratados de ${s.offered} ofertas</div>
-      </div>
-    </div>
-
-    <div class="section-title">Meta personal semanal</div>
-    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px,1fr))">
-      <div class="kpi-card ${statusCls(s.screeningThisWeek, 3, 2)}">
-        <div class="kpi-label">SCREENING CALLS ESTA SEMANA</div>
-        <div class="kpi-value">${s.screeningThisWeek} <span style="font-size:14px;font-weight:400;color:var(--muted)">/ 3</span></div>
-        <div class="goal-bar-wrap">
-          <div class="goal-bar-track">
-            <div class="goal-bar-fill" style="width:${weekGoalPct}%;background:${s.screeningThisWeek >= 3 ? 'var(--green)' : s.screeningThisWeek >= 2 ? 'var(--amber)' : 'var(--red)'}"></div>
-          </div>
-          <div class="goal-bar-label">${weekGoalPct}% de la meta semanal</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section-title">Entrevistas</div>
-    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px,1fr))">
-      <div class="kpi-card neutral">
-        <div class="kpi-label">TOTAL ENTREVISTAS</div>
-        <div class="kpi-value">${s.totalInterviews}</div>
-        <div class="kpi-sub">registradas en Zoho</div>
-      </div>
-      <div class="kpi-card ${statusCls(interviewPositiveRate, 50, 30)}">
-        <div class="kpi-label">RESULTADO POSITIVO</div>
-        <div class="kpi-value">${s.positiveInterviews}</div>
-        <div class="kpi-sub">${interviewPositiveRate}% — Move to Next Round</div>
-      </div>
-    </div>
-
+    <!-- ======= SECCION 1: PIPELINE DE CONTRATACION ======= -->
     <div class="section-divider">
       <div class="section-divider-icon" style="background:rgba(245,166,35,0.15)">⚡</div>
       <div>
-        <div class="section-divider-title">Pipeline de contratación — Applications</div>
-        <div class="section-divider-sub">Candidatos vinculados a una vacante activa</div>
+        <div class="section-divider-title">Pipeline de contratación</div>
+        <div class="section-divider-sub">Candidatos vinculados a una vacante — applications activas e historial</div>
       </div>
     </div>
-    <div class="section-title" style="display:none">Pipeline de contratación — applications</div>
     <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px,1fr))">
       <div class="kpi-card neutral">
         <div class="kpi-label">APPLICATIONS ACTIVAS</div>
@@ -591,9 +512,102 @@ function renderDashboard(raw) {
         <div class="kpi-sub">${s.screeningCalls} de ${s.total} agendaron Discovery Call</div>
       </div>
     </div>
+    <div class="section-title">Meta personal semanal</div>
+    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px,1fr))">
+      <div class="kpi-card ${statusCls(s.screeningThisWeek, 3, 2)}">
+        <div class="kpi-label">SCREENING CALLS ESTA SEMANA</div>
+        <div class="kpi-value">${s.screeningThisWeek} <span style="font-size:14px;font-weight:400;color:var(--muted)">/ 3</span></div>
+        <div class="goal-bar-wrap">
+          <div class="goal-bar-track">
+            <div class="goal-bar-fill" style="width:${weekGoalPct}%;background:${s.screeningThisWeek >= 3 ? 'var(--green)' : s.screeningThisWeek >= 2 ? 'var(--amber)' : 'var(--red)'}"></div>
+          </div>
+          <div class="goal-bar-label">${weekGoalPct}% de la meta semanal</div>
+        </div>
+      </div>
+    </div>
+    <div class="section-title">Entrevistas</div>
+    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px,1fr))">
+      <div class="kpi-card neutral">
+        <div class="kpi-label">TOTAL ENTREVISTAS</div>
+        <div class="kpi-value">${s.totalInterviews}</div>
+        <div class="kpi-sub">registradas en Zoho</div>
+      </div>
+      <div class="kpi-card ${statusCls(interviewPositiveRate, 50, 30)}">
+        <div class="kpi-label">RESULTADO POSITIVO</div>
+        <div class="kpi-value">${s.positiveInterviews}</div>
+        <div class="kpi-sub">${interviewPositiveRate}% — Move to Next Round</div>
+      </div>
+    </div>
 
-    <div class="section-title">Visualizaciones — candidatos generales</div>
+    <!-- ======= SECCION 2: TODOS LOS CANDIDATOS ======= -->
+    <div class="section-divider">
+      <div class="section-divider-icon" style="background:rgba(74,143,255,0.15)">👥</div>
+      <div>
+        <div class="section-divider-title">Todos los candidatos</div>
+        <div class="section-divider-sub">${s.total} candidatos en base de datos · ${s.screeningCalls} con screening call · ${s.available} sin empleo actual</div>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card neutral">
+        <div class="kpi-label">TOTAL CANDIDATOS</div>
+        <div class="kpi-value">${s.total}</div>
+        <div class="kpi-sub">en base de datos</div>
+      </div>
+      <div class="kpi-card ${s.available > 0 ? 'good' : 'neutral'}">
+        <div class="kpi-label">SIN EMPLEO ACTUAL</div>
+        <div class="kpi-value">${s.available}</div>
+        <div class="kpi-sub">${pct(s.available, s.total)}% — Availability: Unemployed / Immediate</div>
+      </div>
+      <div class="kpi-card ${statusCls(pct(s.screeningCalls, s.total), 30, 15)}">
+        <div class="kpi-label">SCREENING CALLS</div>
+        <div class="kpi-value">${s.screeningCalls}</div>
+        <div class="kpi-sub">${pct(s.screeningCalls, s.total)}% de contactados con call realizada</div>
+      </div>
+      <div class="kpi-card ${s.inReview > 0 ? 'good' : 'warn'}">
+        <div class="kpi-label">EN REVISIÓN</div>
+        <div class="kpi-value">${s.inReview}</div>
+        <div class="kpi-sub">status = In Review</div>
+      </div>
+      <div class="kpi-card ${s.offered > 0 ? 'neutral' : ''}">
+        <div class="kpi-label">OFERTAS ENVIADAS</div>
+        <div class="kpi-value">${s.offered}</div>
+        <div class="kpi-sub">stage = Offer</div>
+      </div>
+      <div class="kpi-card ${s.hired > 0 ? 'good' : ''}">
+        <div class="kpi-label">CONTRATADOS</div>
+        <div class="kpi-value">${s.hired}</div>
+        <div class="kpi-sub">stage = Hired</div>
+      </div>
+      <div class="kpi-card ${statusCls(s.offerAcceptRate, 70, 50)}">
+        <div class="kpi-label">ACEPTACIÓN DE OFERTA</div>
+        <div class="kpi-value">${s.offered > 0 ? s.offerAcceptRate + '%' : '—'}</div>
+        <div class="kpi-sub">${s.hired} contratados de ${s.offered} ofertas</div>
+      </div>
+    </div>
     <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Candidatos nuevos por mes</div>
+        <div class="chart-desc">Volumen de prospección — últimos 6 meses</div>
+        <div style="position:relative;width:100%;height:240px;">
+          <canvas id="monthlyChart" role="img" aria-label="Candidatos nuevos por mes"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Distribución por género</div>
+        <div class="chart-desc">Todos los candidatos</div>
+        <div style="position:relative;width:100%;height:240px;">
+          <canvas id="genderAllChart" role="img" aria-label="Distribución por género general"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="charts-row" style="margin-bottom:14px">
+      <div class="chart-card">
+        <div class="chart-title">Top 5 ciudades</div>
+        <div class="chart-desc">Distribución geográfica — todos los candidatos</div>
+        <div style="position:relative;width:100%;height:240px;">
+          <canvas id="citiesAllChart" role="img" aria-label="Top ciudades todos los candidatos"></canvas>
+        </div>
+      </div>
       <div class="chart-card">
         <div class="chart-title">Funnel de conversión</div>
         <div class="chart-desc">De contactados a contratados</div>
@@ -605,27 +619,34 @@ function renderDashboard(raw) {
           <canvas id="funnelChart" role="img" aria-label="Funnel de conversión">Funnel de ${s.total} candidatos a ${s.hired} contratados.</canvas>
         </div>
       </div>
-      <div class="chart-card">
-        <div class="chart-title">Top 5 ciudades — todos los candidatos</div>
-        <div class="chart-desc">De dónde vienen geográficamente</div>
-        <div style="position:relative;width:100%;height:240px;">
-          <canvas id="citiesAllChart" role="img" aria-label="Top ciudades todos los candidatos"></canvas>
-        </div>
+    </div>
+    <div class="chart-card" style="margin-bottom:14px">
+      <div class="chart-title">Candidatos por categoría</div>
+      <div class="chart-desc">Top 8 categorías — todos los candidatos</div>
+      <div style="position:relative;width:100%;height:${Math.max(200, s.catAll.length * 36)}px;">
+        <canvas id="catAllChart" role="img" aria-label="Candidatos por categoría"></canvas>
       </div>
     </div>
     <div class="chart-card" style="margin-bottom:14px">
-      <div class="chart-title">Top 10 empresas de origen — todos los candidatos</div>
+      <div class="chart-title">Top 10 empresas de origen</div>
       <div class="chart-desc">Inteligencia competitiva — de dónde se fugan los mejores talentos</div>
       <div style="position:relative;width:100%;height:${Math.max(200, s.topEmployersAll.length * 32)}px;">
         <canvas id="employersAllChart" role="img" aria-label="Top empresas todos los candidatos"></canvas>
       </div>
     </div>
 
-    <div class="section-title" style="display:none">Pool de talento — futura referencia</div>
+    <!-- ======= SECCION 3: POOL DE TALENTO ======= -->
+    <div class="section-divider">
+      <div class="section-divider-icon" style="background:rgba(62,207,142,0.15)">🎯</div>
+      <div>
+        <div class="section-divider-title">Pool de talento — Future Reference</div>
+        <div class="section-divider-sub">${s.poolCandidates} candidatos aptos · ${s.poolByCategory.length} categorías · ${s.availablePool} sin empleo actual</div>
+      </div>
+    </div>
     <div class="pool-summary-card">
       <div class="pool-summary-stat">
         <div class="pool-summary-val">${s.poolCandidates}</div>
-        <div class="pool-summary-lbl">candidatos listos para activar</div>
+        <div class="pool-summary-lbl">candidatos en el pool</div>
       </div>
       <div class="pool-summary-stat">
         <div class="pool-summary-val">${s.poolByCategory.length}</div>
@@ -637,7 +658,7 @@ function renderDashboard(raw) {
       </div>
       <div class="pool-summary-stat">
         <div class="pool-summary-val">${s.availablePool}</div>
-        <div class="pool-summary-lbl">sin empleo actual en el pool</div>
+        <div class="pool-summary-lbl">sin empleo actual</div>
       </div>
     </div>
     <div class="pool-grid">
@@ -668,43 +689,10 @@ function renderDashboard(raw) {
         </div>`;
       }).join('') || '<div style="color:var(--hint);font-family:var(--mono);font-size:12px;padding:8px 0">Sin candidatos de futura referencia registrados</div>'}
     </div>
-
-    <div class="charts-row" style="margin-bottom:14px">
-      <div class="chart-card">
-        <div class="chart-title">Candidatos nuevos por mes</div>
-        <div class="chart-desc">Volumen de prospección — últimos 6 meses</div>
-        <div style="position:relative;width:100%;height:240px;">
-          <canvas id="monthlyChart" role="img" aria-label="Candidatos nuevos por mes"></canvas>
-        </div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Distribución por género — general</div>
-        <div class="chart-desc">Todos los candidatos</div>
-        <div style="position:relative;width:100%;height:240px;">
-          <canvas id="genderAllChart" role="img" aria-label="Distribución por género general"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="chart-card" style="margin-bottom:14px">
-      <div class="chart-title">Candidatos por categoría</div>
-      <div class="chart-desc">Top 8 categorías — todos los candidatos</div>
-      <div style="position:relative;width:100%;height:${Math.max(200, s.catAll.length * 36)}px;">
-        <canvas id="catAllChart" role="img" aria-label="Candidatos por categoría"></canvas>
-      </div>
-    </div>
-
-    <div class="section-divider">
-      <div class="section-divider-icon" style="background:rgba(62,207,142,0.15)">🎯</div>
-      <div>
-        <div class="section-divider-title">Pool de talento — Future Reference</div>
-        <div class="section-divider-sub">${s.poolCandidates} candidatos aptos · ${s.poolByCategory.length} categorías · ${pct(s.poolCandidates, s.total)}% del total</div>
-      </div>
-    </div>
-
     <div class="charts-row" style="margin-bottom:14px">
       <div class="chart-card">
         <div class="chart-title">Top 5 ciudades — Future Reference</div>
-        <div class="chart-desc">Distribución geográfica del pool de talento</div>
+        <div class="chart-desc">Distribución geográfica del pool</div>
         <div style="position:relative;width:100%;height:240px;">
           <canvas id="citiesPoolChart" role="img" aria-label="Top ciudades pool de talento"></canvas>
         </div>
@@ -752,7 +740,7 @@ function renderDashboard(raw) {
     </div>
   `;
 
-  document.getElementById('mainContent').innerHTML = html;
+    document.getElementById('mainContent').innerHTML = html;
 
   if (funnelChart) funnelChart.destroy();
   const funnelLabels = ['Contactados', 'Con call', 'Aptos', 'In Review', 'Ofertas', 'Contratados'];
