@@ -141,6 +141,36 @@
   .pool-level-bar-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
   .pool-level-bar-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width 0.5s ease; }
   .pool-level-count { font-size: 11px; font-family: var(--mono); color: var(--text); width: 20px; text-align: right; flex-shrink: 0; }
+  .section-divider {
+    margin: 32px -32px 28px;
+    padding: 16px 32px;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-divider-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .section-divider-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text);
+  }
+  .section-divider-sub {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-top: 2px;
+  }
+
   .pool-summary-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 0 10px 10px 0; padding: 14px 18px; margin-bottom: 14px; display: flex; gap: 32px; flex-wrap: wrap; align-items: center; }
   .pool-summary-stat { display: flex; flex-direction: column; gap: 2px; }
   .pool-summary-val { font-size: 22px; font-weight: 600; color: var(--green); line-height: 1; }
@@ -443,7 +473,14 @@ function renderDashboard(raw) {
 
     <div class="insight-card">${generateInsight(s)}</div>
 
-    <div class="section-title">Pipeline de candidatos</div>
+    <div class="section-divider">
+      <div class="section-divider-icon" style="background:rgba(74,143,255,0.15)">📊</div>
+      <div>
+        <div class="section-divider-title">Pipeline de candidatos</div>
+        <div class="section-divider-sub">Vista general de todos los candidatos en base de datos</div>
+      </div>
+    </div>
+    <div class="section-title" style="display:none">Pipeline de candidatos</div>
     <div class="kpi-grid">
       <div class="kpi-card neutral">
         <div class="kpi-label">TOTAL CANDIDATOS</div>
@@ -515,7 +552,14 @@ function renderDashboard(raw) {
       </div>
     </div>
 
-    <div class="section-title">Pipeline de contratación — applications</div>
+    <div class="section-divider">
+      <div class="section-divider-icon" style="background:rgba(245,166,35,0.15)">⚡</div>
+      <div>
+        <div class="section-divider-title">Pipeline de contratación — Applications</div>
+        <div class="section-divider-sub">Candidatos vinculados a una vacante activa</div>
+      </div>
+    </div>
+    <div class="section-title" style="display:none">Pipeline de contratación — applications</div>
     <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px,1fr))">
       <div class="kpi-card neutral">
         <div class="kpi-label">APPLICATIONS ACTIVAS</div>
@@ -577,7 +621,7 @@ function renderDashboard(raw) {
       </div>
     </div>
 
-    <div class="section-title">Pool de talento — futura referencia</div>
+    <div class="section-title" style="display:none">Pool de talento — futura referencia</div>
     <div class="pool-summary-card">
       <div class="pool-summary-stat">
         <div class="pool-summary-val">${s.poolCandidates}</div>
@@ -646,6 +690,14 @@ function renderDashboard(raw) {
       <div class="chart-desc">Top 8 categorías — todos los candidatos</div>
       <div style="position:relative;width:100%;height:${Math.max(200, s.catAll.length * 36)}px;">
         <canvas id="catAllChart" role="img" aria-label="Candidatos por categoría"></canvas>
+      </div>
+    </div>
+
+    <div class="section-divider">
+      <div class="section-divider-icon" style="background:rgba(62,207,142,0.15)">🎯</div>
+      <div>
+        <div class="section-divider-title">Pool de talento — Future Reference</div>
+        <div class="section-divider-sub">${s.poolCandidates} candidatos aptos · ${s.poolByCategory.length} categorías · ${pct(s.poolCandidates, s.total)}% del total</div>
       </div>
     </div>
 
