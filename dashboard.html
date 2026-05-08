@@ -271,11 +271,62 @@ function processData({ candidates, jobs, interviews, events }) {
     return { cat, total: members.length, byLevel, unleveled };
   }).filter(Boolean);
 
+  // Employer normalization map
+  const EMPLOYER_MAP = {
+    "TCS": "Tata Consultancy Services",
+    "Tata consultancy services": "Tata Consultancy Services",
+    "TATA CONSULTANCY SERVICES": "Tata Consultancy Services",
+    "TATA consultancy Services": "Tata Consultancy Services",
+    "TATA Consultancy": "Tata Consultancy Services",
+    "Tata Consultancy Services (TravelPort": "Tata Consultancy Services",
+    "Dextra Technologies a Deloitte business": "Deloitte",
+    "DEXTRA TECHNOLOGIES A DELOITTE BUSINESS": "Deloitte",
+    "Dextra Technologies": "Deloitte",
+    "HEXAWARE": "Hexaware",
+    "Hexaware Tehcnologies": "Hexaware",
+    "HCL TECH": "HCL Technologies",
+    "HCL Technologies - QAD": "HCL Technologies",
+    "Capgemini México": "Capgemini",
+    "CAPGEMINI": "Capgemini",
+    "IBM de México (Santander": "IBM",
+    "IBM Guadalajara": "IBM",
+    "GLOBANT": "Globant",
+    "EPAM Systems": "EPAM",
+    "Oracle de Mexico S.A": "Oracle",
+    "Continental Automotive Guadalajara México, S. de R.L. de C.V": "Continental",
+    "Krasamo Inc": "Krasamo",
+    "KRASAMO INTERNATIONAL": "Krasamo",
+    "NEORIS S.A. de C.V": "NEORIS",
+    "Afore Coppel": "Coppel",
+    "Grupo Coppel S.A. de C.V.": "Coppel",
+    "COPPEL": "Coppel",
+    "Kairos DS - Bancoppel": "Coppel",
+    "Grupo Ti México | OXXO": "Grupo TI México",
+    "3 Pillar Global": "3Pillar Global",
+    "TECH MAHINDRA TECH MAHINDRA": "Tech Mahindra",
+    "DigitalOnUs By Tech Mahindra": "Tech Mahindra",
+    "Intel Corporation - Solidigm": "Solidigm",
+    "Solidigm Technologies": "Solidigm",
+    "Bosch": "BOSCH",
+    "Digital Femsa/SPIN": "FEMSA",
+    "FEMSA Proximidad y Salud OXXO": "FEMSA",
+    "Spin": "FEMSA",
+    "Kairos Digital Solutions": "Kairos DS",
+    "LBS+ (Universidad Autónoma de Durango)": "LBS",
+    "SUKARNE": "SuKarne",
+  };
+
+  function normalizeEmployer(name) {
+    const n = (name || '').trim();
+    return EMPLOYER_MAP[n] || n;
+  }
+
   // Top cities - all candidates
   function topN(arr, field, n) {
     const counts = {};
     arr.forEach(c => {
-      const val = (c[field] || '').trim();
+      let val = (c[field] || '').trim();
+      if (field === 'Current_Employer') val = normalizeEmployer(val);
       if (val) counts[val] = (counts[val] || 0) + 1;
     });
     return Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, n).map(([label, count]) => ({ label, count }));
