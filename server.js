@@ -93,7 +93,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const token = await getToken();
       const [candidates, jobs, interviews, events, applications] = await Promise.all([
-        fetchAllPages('Candidates', token, 'id,Full_Name,Candidate_Status,Candidate_Stage,Call_Sumarize,Candidate_Category,Leveling,City,State,Current_Employer,Gender,Current_Salary,Created_Time,Modified_Time'),
+        fetchAllPages('Candidates', token, 'id,Full_Name,Candidate_Status,Candidate_Stage,Call_Sumarize,Candidate_Category,Leveling,City,State,Current_Employer,Gender,Current_Salary,Availability,Created_Time,Modified_Time'),
         fetchAllPages('JobOpenings', token, 'id,Job_Opening_Name,Job_Status,Department,Date_Opened'),
         fetchAllPages('Interviews', token, 'id,Interview_Status,Candidate_Name').catch(() => []),
         fetchAllPages('Events', token, 'id,Event_Title,Start_DateTime1,End_DateTime1').catch(() => []),

@@ -393,6 +393,16 @@ function processData({ candidates, jobs, interviews, events, applications }) {
   // Discovery call rate: events with discovery call vs total candidates
   const discoveryCallRate = pct(screeningCalls, total);
 
+  // Availability
+  const available = candidates.filter(c => {
+    const a = (c.Availability || '').toLowerCase();
+    return a === 'unemployed' || a === 'immediate' || a === 'inmediate';
+  }).length;
+  const availablePool = poolCandidates.filter(c => {
+    const a = (c.Availability || '').toLowerCase();
+    return a === 'unemployed' || a === 'immediate' || a === 'inmediate';
+  }).length;
+
   return {
     total, apt, screeningCalls, screeningThisWeek,
     inReview, offered, hired, offerAcceptRate,
@@ -402,6 +412,7 @@ function processData({ candidates, jobs, interviews, events, applications }) {
     topCitiesAll, topCitiesPool, topEmployersAll, topEmployersPool,
     genderAll, genderPool, catAll, monthlyNew,
     activeApps: activeApps.length, hiredApps: hiredApps.length, hiredAppsList,
+    available, availablePool,
     avgDaysToApp, reactivated, discoveryCallRate,
     jobs, candidates
   };
@@ -438,6 +449,11 @@ function renderDashboard(raw) {
         <div class="kpi-label">TOTAL CANDIDATOS</div>
         <div class="kpi-value">${s.total}</div>
         <div class="kpi-sub">en base de datos</div>
+      </div>
+      <div class="kpi-card ${s.available > 0 ? 'good' : 'neutral'}">
+        <div class="kpi-label">DISPONIBLES AHORA</div>
+        <div class="kpi-value">${s.available}</div>
+        <div class="kpi-sub">${pct(s.available, s.total)}% del total — Unemployed o Immediate</div>
       </div>
       <div class="kpi-card ${statusCls(aptRate, 25, 15)}">
         <div class="kpi-label">APTOS OUTPOST QA</div>
@@ -574,6 +590,10 @@ function renderDashboard(raw) {
       <div class="pool-summary-stat">
         <div class="pool-summary-val">${pct(s.poolCandidates, s.total)}%</div>
         <div class="pool-summary-lbl">del total de candidatos</div>
+      </div>
+      <div class="pool-summary-stat">
+        <div class="pool-summary-val">${s.availablePool}</div>
+        <div class="pool-summary-lbl">disponibles ahora (Unemployed/Immediate)</div>
       </div>
     </div>
     <div class="pool-grid">
