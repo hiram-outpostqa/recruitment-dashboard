@@ -53,6 +53,8 @@ async function getToken() {
     grant_type: 'refresh_token'
   });
   const data = await httpsPost('accounts.zoho.com', '/oauth/v2/token', params.toString());
+  console.log('Token response:', JSON.stringify(data));
+  console.log('Using refresh token:', CONFIG.refreshToken.substring(0, 20) + '...');
   if (!data.access_token) throw new Error(data.error || 'Token refresh failed');
   cachedToken = data.access_token;
   tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
