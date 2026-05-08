@@ -6,7 +6,7 @@ const path = require('path');
 const CONFIG = {
   clientId: '1000.OBUI55MA3J9TU6ISTMXHI70S5SMYPM',
   clientSecret: '4eb294031cd1f44790edf1b983bcb3f44147a5dafd',
-  refreshToken: '1000.bcb7b2a7d1e31bd1af188478e13e2ebe.b6576a4094ec223fd065dc375433aa39',
+  refreshToken: '1000.c19cc8dd396b6279b1c4ea1393dd7756.8cf4c6e71c15c753562d52f0f3e869a6',
 };
 
 let cachedToken = null;
