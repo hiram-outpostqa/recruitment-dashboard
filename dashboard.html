@@ -367,7 +367,7 @@ function processData({ candidates, jobs, interviews, events, applications }) {
 
   // Applications pipeline stats
   const apps = applications || [];
-  const CLOSED_STATUSES = ['Rejected', 'Unqualified', 'Rejected by hiring manager', 'Junk Candidate', 'Stop Responding', 'Archived', 'Not a fit for Position', 'Submitted-to-hiring manager', 'Associated', 'Hired-for-Interview', 'Hired by hiring manager'];
+  const CLOSED_STATUSES = ['Rejected', 'Unqualified', 'Rejected by hiring manager', 'Junk Candidate', 'Stop Responding', 'Archived', 'Not a fit for Position', 'Submitted-to-hiring manager', 'Associated', 'Hired-for-Interview', 'Hired by hiring manager', 'Forward-to-Onboarding', 'Hired'];
   const activeApps = apps.filter(a => !CLOSED_STATUSES.includes(a.Application_Status));
   const hiredApps = apps.filter(a => a.Hiring_Pipeline === 'Hired');
   const hiredAppsList = hiredApps.map(a => ({
