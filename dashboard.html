@@ -9,9 +9,9 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #0f0f11; --surface: #17171a; --surface2: #1e1e22;
-    --border: rgba(255,255,255,0.06); --border2: rgba(255,255,255,0.12);
-    --text: #f0efe8; --muted: #888884; --hint: #4a4a48;
+    --bg: #f5f0e8; --surface: #ffffff; --surface2: #ede8df;
+    --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.15);
+    --text: #1a1a18; --muted: #6b6b67; --hint: #a0a09c;
     --blue: #4a8fff; --blue-dim: rgba(74,143,255,0.15);
     --green: #3ecf8e; --green-dim: rgba(62,207,142,0.12);
     --amber: #f5a623; --amber-dim: rgba(245,166,35,0.12);
@@ -124,7 +124,7 @@
 
   .insight-card {
     background: var(--surface); border: 1px solid var(--border);
-    border-left: 3px solid var(--blue); border-radius: 0 10px 10px 0;
+    border-left: 3px solid var(--blue); border-radius: 0 10px 10px 0; color: var(--muted);
     padding: 14px 18px; margin-bottom: 14px;
     font-size: 13px; color: var(--muted); line-height: 1.7;
   }
@@ -583,9 +583,9 @@ function renderDashboard(raw) {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: '#888884', font: { size: 10, family: 'DM Mono' }, autoSkip: false, maxRotation: 30 }, grid: { display: false }, border: { color: 'rgba(255,255,255,0.06)' } },
-        y: { position: 'left', ticks: { color: '#888884', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
-        y2: { position: 'right', min: 0, max: 100, ticks: { callback: v => v + '%', color: '#888884', font: { size: 10 } }, grid: { display: false } }
+        x: { ticks: { color: '#6b6b67', font: { size: 10, family: 'DM Mono' }, autoSkip: false, maxRotation: 30 }, grid: { display: false }, border: { color: 'rgba(255,255,255,0.06)' } },
+        y: { position: 'left', ticks: { color: '#6b6b67', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+        y2: { position: 'right', min: 0, max: 100, ticks: { callback: v => v + '%', color: '#6b6b67', font: { size: 10 } }, grid: { display: false } }
       }
     }
   });
@@ -596,10 +596,10 @@ function renderDashboard(raw) {
   window._citiesAllChart = new Chart(document.getElementById('citiesAllChart'), {
     type: 'doughnut',
     data: {
-      labels: s.topCitiesAll.map(c => c.label),
+      labels: s.topCitiesAll.map(c => c.label + ' (' + c.count + ')'),
       datasets: [{ data: s.topCitiesAll.map(c => c.count), backgroundColor: CITY_COLORS, borderColor: CITY_COLORS.map(c => c.replace('0.8','1')), borderWidth: 1, hoverOffset: 4 }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#888884', font: { size: 10, family: 'DM Mono' }, boxWidth: 8, padding: 10 } } }, cutout: '55%' }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'left', labels: { color: '#6b6b67', font: { size: 12, family: 'DM Mono' }, boxWidth: 12, padding: 14 } } }, cutout: '55%' }
   });
 
   // Employers All - Horizontal bar
@@ -614,8 +614,8 @@ function renderDashboard(raw) {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: '#888884', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
-        y: { ticks: { color: '#888884', font: { size: 10, family: 'DM Mono' } }, grid: { display: false } }
+        x: { ticks: { color: '#6b6b67', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+        y: { ticks: { color: '#6b6b67', font: { size: 10, family: 'DM Mono' } }, grid: { display: false } }
       }
     }
   });
@@ -625,10 +625,10 @@ function renderDashboard(raw) {
   window._citiesPoolChart = new Chart(document.getElementById('citiesPoolChart'), {
     type: 'doughnut',
     data: {
-      labels: s.topCitiesPool.map(c => c.label),
+      labels: s.topCitiesPool.map(c => c.label + ' (' + c.count + ')'),
       datasets: [{ data: s.topCitiesPool.map(c => c.count), backgroundColor: ['rgba(62,207,142,0.8)','rgba(74,143,255,0.8)','rgba(245,166,35,0.8)','rgba(255,95,95,0.8)','rgba(168,85,247,0.8)'], borderWidth: 1, hoverOffset: 4 }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#888884', font: { size: 10, family: 'DM Mono' }, boxWidth: 8, padding: 10 } } }, cutout: '55%' }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'left', labels: { color: '#6b6b67', font: { size: 12, family: 'DM Mono' }, boxWidth: 12, padding: 14 } } }, cutout: '55%' }
   });
 
   // Employers Pool - Horizontal bar
@@ -643,8 +643,8 @@ function renderDashboard(raw) {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: '#888884', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
-        y: { ticks: { color: '#888884', font: { size: 10, family: 'DM Mono' } }, grid: { display: false } }
+        x: { ticks: { color: '#6b6b67', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+        y: { ticks: { color: '#6b6b67', font: { size: 10, family: 'DM Mono' } }, grid: { display: false } }
       }
     }
   });
