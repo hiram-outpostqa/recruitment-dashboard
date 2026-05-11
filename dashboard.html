@@ -120,6 +120,7 @@
   .badge-open   { background: var(--green-dim); color: var(--green); }
   .badge-hold   { background: var(--amber-dim); color: var(--amber); }
   .badge-closed { background: var(--border); color: var(--muted); }
+  .badge-filled { background: var(--green-dim); color: var(--green); }
   .badge-blue   { background: var(--blue-dim); color: var(--blue); }
 
   .insight-card {
@@ -614,9 +615,9 @@ function renderDashboard(raw) {
         <tbody>
           ${raw.jobs.slice(0, 10).map(j => {
             const st = (j.Job_Status || '').toLowerCase();
-            const isOpen = st.includes('open'), isHold = st.includes('hold'), isCancelled = st.includes('cancel');
-            const cls = isOpen ? 'badge-open' : isHold ? 'badge-hold' : isCancelled ? 'badge' : 'badge-closed';
-            const label = isOpen ? 'Open' : isHold ? 'On Hold' : isCancelled ? 'Cancelled' : 'Closed';
+            const isOpen = st.includes('open'), isHold = st.includes('hold'), isCancelled = st.includes('cancel'), isFilled = st.includes('filled');
+            const cls = isOpen ? 'badge-open' : isHold ? 'badge-hold' : isFilled ? 'badge-filled' : isCancelled ? 'badge' : 'badge-closed';
+            const label = isOpen ? 'Open' : isHold ? 'On Hold' : isFilled ? 'Filled' : isCancelled ? 'Cancelled' : 'Closed';
             const date = j.Date_Opened ? new Date(j.Date_Opened).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
             return `<tr><td style="font-weight:500">${j.Job_Opening_Name || '—'}</td><td style="color:var(--muted)">${j.Department || '—'}</td><td><span class="badge ${cls}">${label}</span></td><td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${date}</td></tr>`;
           }).join('')}
