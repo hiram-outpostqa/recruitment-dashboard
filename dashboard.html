@@ -274,13 +274,13 @@ function processData({ candidates, jobs, interviews, events, applications }) {
 
   const offerAcceptRate = pct(hired, offered);
 
-  const openJobs = jobs.filter(j => (j.Job_Status || '').toLowerCase().includes('open'));
+  const openJobs = jobs.filter(j => (j.Job_Opening_Status || '').toLowerCase().includes('open'));
   const closedJobs = jobs.filter(j => {
-    const s = (j.Job_Status || '').toLowerCase();
+    const s = (j.Job_Opening_Status || '').toLowerCase();
     return s.includes('close') || s.includes('filled') || s.includes('cerrad');
   });
-  const holdJobs = jobs.filter(j => (j.Job_Status || '').toLowerCase().includes('hold'));
-  const cancelledJobs = jobs.filter(j => (j.Job_Status || '').toLowerCase().includes('cancel'));
+  const holdJobs = jobs.filter(j => (j.Job_Opening_Status || '').toLowerCase().includes('hold'));
+  const cancelledJobs = jobs.filter(j => (j.Job_Opening_Status || '').toLowerCase().includes('cancel'));
 
   const totalInterviews = interviews.length;
   const positiveInterviews = interviews.filter(i =>
@@ -614,12 +614,12 @@ function renderDashboard(raw) {
         <thead><tr><th>POSICIÓN</th><th>ÁREA</th><th>ESTADO</th><th>FECHA</th></tr></thead>
         <tbody>
           ${raw.jobs.slice(0, 10).map(j => {
-            const st = (j.Job_Status || '').toLowerCase();
+            const st = (j.Job_Opening_Status || '').toLowerCase();
             const isOpen = st.includes('open'), isHold = st.includes('hold'), isCancelled = st.includes('cancel'), isFilled = st.includes('filled');
             const cls = isOpen ? 'badge-open' : isHold ? 'badge-hold' : isFilled ? 'badge-filled' : isCancelled ? 'badge' : 'badge-closed';
             const label = isOpen ? 'Open' : isHold ? 'On Hold' : isFilled ? 'Filled' : isCancelled ? 'Cancelled' : 'Closed';
             const date = j.Date_Opened ? new Date(j.Date_Opened).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
-            return `<tr><td style="font-weight:500">${j.Job_Opening_Name || '—'}</td><td style="color:var(--muted)">${j.Department || '—'}</td><td><span class="badge ${cls}">${label}</span></td><td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${date}</td></tr>`;
+            return `<tr><td style="font-weight:500">${j.Job_Opening_Name || '—'}</td><td style="color:var(--muted)">${j.Client_Name?.name || j.Client_Name || '—'}</td><td><span class="badge ${cls}">${label}</span></td><td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${date}</td></tr>`;
           }).join('')}
         </tbody>
       </table>
