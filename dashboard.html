@@ -493,6 +493,40 @@ function generateInsight(s) {
 
 
 
+function renderSalaryCard(bands, subId, rowsId) {
+  const sub = document.getElementById(subId);
+  const rows = document.getElementById(rowsId);
+  if (!sub || !rows) return;
+  const total = bands.reduce(function(a,b) { return a+b.count; }, 0);
+  sub.textContent = total + ' candidatos con salario capturado · MXN mensual';
+  if (bands.length === 0) {
+    rows.innerHTML = '<div style="font-size:12px;color:var(--hint)">Sin datos salariales capturados</div>';
+    return;
+  }
+  const globalMax = Math.max.apply(null, bands.map(function(b) { return b.max; }));
+  var html = '';
+  bands.forEach(function(b) {
+    var minPct = (b.min / globalMax) * 100;
+    var maxPct = (b.max / globalMax) * 100;
+    var avgPct = (b.avg / globalMax) * 100;
+    function fmt(v) { return '$' + v.toLocaleString('es-MX'); }
+    html += '<div class="salary-level-row">' +
+      '<div class="salary-level-name">' + b.level + '</div>' +
+      '<div class="salary-bar-wrap">' +
+        '<div class="salary-bar-range" style="left:' + minPct + '%;width:' + (maxPct-minPct) + '%"></div>' +
+        '<div class="salary-bar-avg" style="left:' + avgPct + '%"></div>' +
+      '</div>' +
+      '<div class="salary-stats">' +
+        '<span>' + fmt(b.min) + '</span>' +
+        '<span class="salary-stat-val">' + fmt(b.avg) + '</span>' +
+        '<span>' + fmt(b.max) + '</span>' +
+        '<span class="salary-count">(' + b.count + ')</span>' +
+      '</div>' +
+    '</div>';
+  });
+  rows.innerHTML = html;
+}
+
 function renderDashboard(raw) {
   const s = processData(raw);
   const aptRate = pct(s.apt, s.total);
@@ -641,57 +675,15 @@ function renderDashboard(raw) {
 
     <div class="section-title">Banda salarial por nivel</div>
     <div class="salary-grid">
-      <div class="salary-card">
+      <div class="salary-card" id="salaryAllCard">
         <div class="salary-card-title">Todos los candidatos</div>
-        <div class="salary-card-sub">${s.salaryBandsAll.reduce((a,b) => a+b.count, 0)} candidatos con salario capturado · MXN mensual</div>
-        ${s.salaryBandsAll.length > 0 ? (() => {
-          const globalMax = Math.max(...s.salaryBandsAll.map(b => b.max));
-          return s.salaryBandsAll.map(b => {
-            const minPct = (b.min / globalMax) * 100;
-            const maxPct = (b.max / globalMax) * 100;
-            const avgPct = (b.avg / globalMax) * 100;
-            const fmt = v => '$' + v.toLocaleString('es-MX');
-            return \`<div class="salary-level-row">
-              <div class="salary-level-name">\${b.level}</div>
-              <div class="salary-bar-wrap">
-                <div class="salary-bar-range" style="left:\${minPct}%;width:\${maxPct-minPct}%"></div>
-                <div class="salary-bar-avg" style="left:\${avgPct}%"></div>
-              </div>
-              <div class="salary-stats">
-                <span>\${fmt(b.min)}</span>
-                <span class="salary-stat-val">\${fmt(b.avg)}</span>
-                <span>\${fmt(b.max)}</span>
-                <span class="salary-count">(\${b.count})</span>
-              </div>
-            </div>\`;
-          }).join('');
-        })() : '<div style="font-size:12px;color:var(--hint)">Sin datos salariales capturados</div>'}
+        <div class="salary-card-sub" id="salaryAllSub"></div>
+        <div id="salaryAllRows"></div>
       </div>
-      <div class="salary-card">
+      <div class="salary-card" id="salaryPoolCard">
         <div class="salary-card-title">Future Reference — pool de talento</div>
-        <div class="salary-card-sub">${s.salaryBandsPool.reduce((a,b) => a+b.count, 0)} candidatos con salario capturado · MXN mensual</div>
-        ${s.salaryBandsPool.length > 0 ? (() => {
-          const globalMax = Math.max(...s.salaryBandsPool.map(b => b.max));
-          return s.salaryBandsPool.map(b => {
-            const minPct = (b.min / globalMax) * 100;
-            const maxPct = (b.max / globalMax) * 100;
-            const avgPct = (b.avg / globalMax) * 100;
-            const fmt = v => '$' + v.toLocaleString('es-MX');
-            return \`<div class="salary-level-row">
-              <div class="salary-level-name">\${b.level}</div>
-              <div class="salary-bar-wrap">
-                <div class="salary-bar-range" style="left:\${minPct}%;width:\${maxPct-minPct}%"></div>
-                <div class="salary-bar-avg" style="left:\${avgPct}%"></div>
-              </div>
-              <div class="salary-stats">
-                <span>\${fmt(b.min)}</span>
-                <span class="salary-stat-val">\${fmt(b.avg)}</span>
-                <span>\${fmt(b.max)}</span>
-                <span class="salary-count">(\${b.count})</span>
-              </div>
-            </div>\`;
-          }).join('');
-        })() : '<div style="font-size:12px;color:var(--hint)">Sin datos salariales en el pool</div>'}
+        <div class="salary-card-sub" id="salaryPoolSub"></div>
+        <div id="salaryPoolRows"></div>
       </div>
     </div>
 
@@ -798,6 +790,9 @@ function renderDashboard(raw) {
     options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
       scales: { x: { ticks: { color: '#6b6b67' }, grid: { color: 'rgba(0,0,0,0.06)' } }, y: { ticks: { color: '#6b6b67', font: { size: 10, family: 'DM Mono' } }, grid: { display: false } } } }
   });
+
+  renderSalaryCard(s.salaryBandsAll, 'salaryAllSub', 'salaryAllRows');
+  renderSalaryCard(s.salaryBandsPool, 'salaryPoolSub', 'salaryPoolRows');
 
   const el = document.getElementById('lastUpdated');
   if (el) el.textContent = `Actualizado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
