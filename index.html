@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recruitment Dashboard — Outpost QA</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f0e8; --surface: #ffffff; --surface2: #ede8df;
+    --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.15);
+    --text: #1a1a18; --muted: #6b6b67; --hint: #a0a09c;
+    --blue: #4a8fff; --blue-dim: rgba(74,143,255,0.15);
+    --green: #3ecf8e; --green-dim: rgba(62,207,142,0.12);
+    --amber: #f5a623; --amber-dim: rgba(245,166,35,0.12);
+    --red: #ff5f5f; --red-dim: rgba(255,95,95,0.12);
+    --font: 'DM Sans', sans-serif; --mono: 'DM Mono', monospace;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg); z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo-mark {
+    width: 32px; height: 32px; background: var(--blue); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; font-weight: 500; color: #fff;
+  }
+  .header-title { font-size: 14px; font-weight: 500; }
+  .header-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 1px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--hint); }
+  .status-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-text { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .btn-refresh {
+    padding: 7px 14px; background: transparent; border: 1px solid var(--border2);
+    border-radius: 6px; color: var(--text); font-family: var(--font); font-size: 12px;
+    cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+  }
+  .btn-refresh:hover { background: var(--surface2); border-color: var(--blue); color: var(--blue); }
+  .btn-refresh:disabled { opacity: 0.4; cursor: not-allowed; }
+  .spin { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .main { padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
+
+  .section-title {
+    font-size: 10px; font-family: var(--mono); letter-spacing: 0.08em;
+    color: var(--hint); text-transform: uppercase; margin-bottom: 12px; margin-top: 28px;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px; margin-bottom: 8px;
+  }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px; position: relative; overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .kpi-card:hover { border-color: var(--border2); }
+  .kpi-card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    border-radius: 10px 10px 0 0; background: var(--accent, transparent);
+  }
+  .kpi-card.good { --accent: var(--green); }
+  .kpi-card.warn { --accent: var(--amber); }
+  .kpi-card.bad  { --accent: var(--red); }
+  .kpi-card.neutral { --accent: var(--blue); }
+  .kpi-label { font-size: 10px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.04em; margin-bottom: 10px; }
+  .kpi-value { font-size: 26px; font-weight: 600; line-height: 1; margin-bottom: 5px; }
+  .kpi-card.good .kpi-value { color: var(--green); }
+  .kpi-card.warn .kpi-value { color: var(--amber); }
+  .kpi-card.bad  .kpi-value { color: var(--red); }
+  .kpi-card.neutral .kpi-value { color: var(--blue); }
+  .kpi-card:not(.good):not(.warn):not(.bad):not(.neutral) .kpi-value { color: var(--text); }
+  .kpi-sub { font-size: 11px; color: var(--hint); line-height: 1.4; }
+
+  .goal-bar-wrap { margin-top: 8px; }
+  .goal-bar-track { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+  .goal-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+  .goal-bar-label { font-size: 10px; color: var(--hint); font-family: var(--mono); margin-top: 4px; }
+
+  .charts-row { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; margin-bottom: 14px; }
+  @media (max-width: 760px) { .charts-row { grid-template-columns: 1fr; } }
+
+  .chart-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px;
+  }
+  .chart-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .chart-desc { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 14px; }
+  .legend-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .legend-sq { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  .table-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px; margin-bottom: 14px; overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; padding: 0 12px 12px 0;
+    font-size: 10px; font-family: var(--mono); letter-spacing: 0.06em;
+    color: var(--hint); border-bottom: 1px solid var(--border); font-weight: 400;
+  }
+  tbody td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .badge {
+    display: inline-block; padding: 3px 8px; border-radius: 4px;
+    font-size: 10px; font-family: var(--mono); letter-spacing: 0.04em; font-weight: 500;
+  }
+  .badge-open   { background: var(--green-dim); color: var(--green); }
+  .badge-hold   { background: var(--amber-dim); color: var(--amber); }
+  .badge-closed { background: var(--border); color: var(--muted); }
+  .badge-filled { background: var(--green-dim); color: var(--green); }
+  .badge-blue   { background: var(--blue-dim); color: var(--blue); }
+
+  .insight-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--blue); border-radius: 0 10px 10px 0; color: var(--muted);
+    padding: 14px 18px; margin-bottom: 14px;
+    font-size: 13px; color: var(--muted); line-height: 1.7;
+  }
+  .insight-card strong { color: var(--text); font-weight: 500; }
+
+  .pool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .pool-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .pool-card-header { padding: 14px 18px 10px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .pool-card-title { font-size: 13px; font-weight: 500; }
+  .pool-card-total { font-size: 11px; font-family: var(--mono); color: var(--muted); }
+  .pool-levels { padding: 10px 18px 14px; display: flex; flex-direction: column; gap: 7px; }
+  .pool-level-row { display: flex; align-items: center; gap: 10px; }
+  .pool-level-name { font-size: 11px; font-family: var(--mono); color: var(--muted); width: 58px; flex-shrink: 0; }
+  .pool-level-bar-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .pool-level-bar-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width 0.5s ease; }
+  .pool-level-count { font-size: 11px; font-family: var(--mono); color: var(--text); width: 20px; text-align: right; flex-shrink: 0; }
+  .section-divider {
+    margin: 32px -32px 28px;
+    padding: 16px 32px;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-divider-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .section-divider-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text);
+  }
+  .section-divider-sub {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-top: 2px;
+  }
+
+  .salary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .salary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .salary-card-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .salary-card-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 14px; }
+  .salary-level-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .salary-level-name { font-size: 11px; font-family: var(--mono); color: var(--muted); width: 52px; flex-shrink: 0; }
+  .salary-bar-wrap { flex: 1; position: relative; height: 8px; background: var(--surface2); border-radius: 4px; }
+  .salary-bar-range { position: absolute; height: 100%; border-radius: 4px; background: rgba(74,143,255,0.3); }
+  .salary-bar-avg { position: absolute; width: 3px; height: 100%; border-radius: 2px; background: var(--blue); transform: translateX(-50%); }
+  .salary-stats { display: flex; gap: 8px; font-size: 10px; font-family: var(--mono); color: var(--hint); width: 160px; flex-shrink: 0; justify-content: flex-end; }
+  .salary-stat-val { color: var(--text); font-weight: 500; }
+  .salary-count { font-size: 10px; color: var(--hint); font-family: var(--mono); }
+
+  .pool-summary-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 0 10px 10px 0; padding: 14px 18px; margin-bottom: 14px; display: flex; gap: 32px; flex-wrap: wrap; align-items: center; }
+  .pool-summary-stat { display: flex; flex-direction: column; gap: 2px; }
+  .pool-summary-val { font-size: 22px; font-weight: 600; color: var(--green); line-height: 1; }
+  .pool-summary-lbl { font-size: 11px; font-family: var(--mono); color: var(--muted); }
+
+  .state-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 60vh; gap: 14px; color: var(--muted); font-family: var(--mono);
+    font-size: 13px; text-align: center;
+  }
+  .loader {
+    width: 36px; height: 36px; border: 2px solid var(--border2);
+    border-top-color: var(--blue); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  .error-msg { color: var(--red); }
+  .error-detail { font-size: 11px; color: var(--hint); max-width: 480px; line-height: 1.6; }
+
+  .last-updated { font-size: 11px; color: var(--hint); font-family: var(--mono); }
+  .top-bar { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo-mark">RC</div>
+    <div>
+      <div class="header-title">Recruitment Dashboard</div>
+      <div class="header-sub">outpost qa — zoho recruit</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">connecting...</span>
+    <button class="btn-refresh" id="btnRefresh" onclick="loadData()" disabled>
+      <span id="refreshIcon">↻</span> Refresh
+    </button>
+  </div>
+</div>
+
+<div class="main" id="mainContent">
+  <div class="state-screen">
+    <div class="loader"></div>
+    <span>Connecting to Zoho Recruit...</span>
+  </div>
+</div>
+
+<script>
+let funnelChart = null;
+let donutChart = null;
+
+function setStatus(state, text) {
+  document.getElementById('statusDot').className = 'status-dot' + (state === 'active' ? ' active' : '');
+  document.getElementById('statusText').textContent = text;
+}
+
+function pct(a, b) { return b === 0 ? 0 : Math.round((a / b) * 100); }
+
+function statusCls(val, good, warn, higherBetter = true) {
+  if (higherBetter) { return val >= good ? 'good' : val >= warn ? 'warn' : 'bad'; }
+  return val <= good ? 'good' : val <= warn ? 'warn' : 'bad';
+}
+
+function getWeekStart() {
+  // Use Mexico timezone offset (GMT-6)
+  const now = new Date();
+  const mexicoOffset = -6 * 60;
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const mexicoMs = utcMs + mexicoOffset * 60000;
+  const d = new Date(mexicoMs);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
+  // Convert back to UTC for comparison
+  return new Date(d.getTime() - mexicoOffset * 60000);
+}
+
+function processData({ candidates, jobs, interviews, events, applications }) {
+  const total = candidates.length;
+
+  const apt = candidates.filter(c =>
+    (c.Candidate_Status || '').toLowerCase() === 'future reference'
+  ).length;
+
+  const weekStart = getWeekStart();
+  const discoveryCalls = (events || []).filter(e =>
+    (e.Event_Title || '').toLowerCase().includes('discovery call')
+  );
+  const screeningCalls = discoveryCalls.length;
+  const screeningThisWeek = discoveryCalls.filter(e => {
+    const date = new Date(e.Start_DateTime1 || 0);
+    return date >= weekStart;
+  }).length;
+
+  const inReview = candidates.filter(c =>
+    (c.Candidate_Status || '').toLowerCase() === 'in review'
+  ).length;
+
+  const offered = candidates.filter(c =>
+    (c.Candidate_Stage || '').toLowerCase() === 'offer'
+  ).length;
+
+  const hired = candidates.filter(c =>
+    (c.Candidate_Stage || '').toLowerCase() === 'hired'
+  ).length;
+
+  const offerAcceptRate = pct(hired, offered);
+
+  const openJobs = jobs.filter(j => (j.Job_Opening_Status || '').toLowerCase().includes('open'));
+  const closedJobs = jobs.filter(j => {
+    const s = (j.Job_Opening_Status || '').toLowerCase();
+    return s.includes('close') || s.includes('filled') || s.includes('cerrad');
+  });
+  const holdJobs = jobs.filter(j => (j.Job_Opening_Status || '').toLowerCase().includes('hold'));
+  const cancelledJobs = jobs.filter(j => (j.Job_Opening_Status || '').toLowerCase().includes('cancel'));
+
+  const totalInterviews = interviews.length;
+  const positiveInterviews = interviews.filter(i =>
+    (i.Interview_Status || i.Status || '').toLowerCase().includes('move to next round')
+  ).length;
+
+  // Pool of talent: Future Reference candidates by category and level
+  const CATEGORIES = ['Manual Tester','Automation Tester','QA Analyst','SDET','Developer','Director','Manager','Scrum Master','DevOps','IT Engineer','INTERNSHIP','Administrative','Other'];
+  const LEVELS = ['Trainee','L1','L2','L3','Staff','Manager','Director'];
+  const poolCandidates = candidates.filter(c => (c.Candidate_Status || '').toLowerCase() === 'future reference');
+  const poolByCategory = CATEGORIES.map(cat => {
+    const members = poolCandidates.filter(c => (c.Candidate_Category || '').trim() === cat);
+    if (members.length === 0) return null;
+    const byLevel = LEVELS.map(lv => ({
+      level: lv,
+      count: members.filter(c => (c.Leveling || '').trim() === lv).length
+    })).filter(l => l.count > 0);
+    const unleveled = members.filter(c => !c.Leveling || c.Leveling.trim() === '').length;
+    return { cat, total: members.length, byLevel, unleveled };
+  }).filter(Boolean);
+
+  // Employer normalization map
+  const EMPLOYER_MAP = {
+    "TCS": "Tata Consultancy Services",
+    "Tata consultancy services": "Tata Consultancy Services",
+    "TATA CONSULTANCY SERVICES": "Tata Consultancy Services",
+    "TATA consultancy Services": "Tata Consultancy Services",
+    "TATA Consultancy": "Tata Consultancy Services",
+    "Tata Consultancy Services (TravelPort": "Tata Consultancy Services",
+    "Dextra Technologies a Deloitte business": "Deloitte",
+    "DEXTRA TECHNOLOGIES A DELOITTE BUSINESS": "Deloitte",
+    "Dextra Technologies": "Deloitte",
+    "HEXAWARE": "Hexaware",
+    "Hexaware Tehcnologies": "Hexaware",
+    "HCL TECH": "HCL Technologies",
+    "HCL Technologies - QAD": "HCL Technologies",
+    "Capgemini México": "Capgemini",
+    "CAPGEMINI": "Capgemini",
+    "IBM de México (Santander": "IBM",
+    "IBM Guadalajara": "IBM",
+    "GLOBANT": "Globant",
+    "EPAM Systems": "EPAM",
+    "Oracle de Mexico S.A": "Oracle",
+    "Continental Automotive Guadalajara México, S. de R.L. de C.V": "Continental",
+    "Krasamo Inc": "Krasamo",
+    "KRASAMO INTERNATIONAL": "Krasamo",
+    "NEORIS S.A. de C.V": "NEORIS",
+    "Afore Coppel": "Coppel",
+    "Grupo Coppel S.A. de C.V.": "Coppel",
+    "COPPEL": "Coppel",
+    "Kairos DS - Bancoppel": "Coppel",
+    "Grupo Ti México | OXXO": "Grupo TI México",
+    "3 Pillar Global": "3Pillar Global",
+    "TECH MAHINDRA TECH MAHINDRA": "Tech Mahindra",
+    "DigitalOnUs By Tech Mahindra": "Tech Mahindra",
+    "Intel Corporation - Solidigm": "Solidigm",
+    "Solidigm Technologies": "Solidigm",
+    "Bosch": "BOSCH",
+    "Digital Femsa/SPIN": "FEMSA",
+    "FEMSA Proximidad y Salud OXXO": "FEMSA",
+    "Spin": "FEMSA",
+    "Kairos Digital Solutions": "Kairos DS",
+    "LBS+ (Universidad Autónoma de Durango)": "LBS",
+    "SUKARNE": "SuKarne",
+  };
+
+  function normalizeEmployer(name) {
+    const n = (name || '').trim();
+    return EMPLOYER_MAP[n] || n;
+  }
+
+  // Top cities - all candidates
+  function topN(arr, field, n) {
+    const counts = {};
+    arr.forEach(c => {
+      let val = (c[field] || '').trim();
+      if (field === 'Current_Employer') val = normalizeEmployer(val);
+      if (val) counts[val] = (counts[val] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, n).map(([label, count]) => ({ label, count }));
+  }
+  const topCitiesAll = topN(candidates, 'City', 5);
+  const topCitiesPool = topN(poolCandidates, 'City', 5);
+  const topEmployersAll = topN(candidates, 'Current_Employer', 10);
+  const topEmployersPool = topN(poolCandidates, 'Current_Employer', 10);
+
+  // Gender distribution
+  const genderAll = { male: 0, female: 0, other: 0 };
+  const genderPool = { male: 0, female: 0, other: 0 };
+  candidates.forEach(c => {
+    const g = (c.Gender || '').toLowerCase();
+    const bucket = g === 'male' ? 'male' : g === 'female' ? 'female' : 'other';
+    genderAll[bucket]++;
+    if ((c.Candidate_Status || '').toLowerCase() === 'future reference') genderPool[bucket]++;
+  });
+
+  // Candidates by category (all)
+  const catAll = CATEGORIES.map(cat => ({
+    cat, count: candidates.filter(c => (c.Candidate_Category || '').trim() === cat).length
+  })).filter(c => c.count > 0).sort((a,b) => b.count - a.count).slice(0, 8);
+
+  // New candidates by month (last 6 months)
+  const now = new Date();
+  const monthlyNew = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+    const label = d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+    const count = candidates.filter(c => {
+      const t = new Date(c.Created_Time || 0);
+      return t >= d && t < end;
+    }).length;
+    monthlyNew.push({ label, count });
+  }
+
+  // Applications pipeline stats
+  const apps = applications || [];
+  const CLOSED_STATUSES = ['Rejected', 'Unqualified', 'Rejected by hiring manager', 'Junk Candidate', 'Stop Responding', 'Archived', 'Not a fit for Position', 'Submitted-to-hiring manager', 'Associated', 'Hired-for-Interview', 'Hired by hiring manager', 'Forward-to-Onboarding', 'Hired'];
+  const activeApps = apps.filter(a => !CLOSED_STATUSES.includes(a.Application_Status));
+  const hiredApps = apps.filter(a => a.Hiring_Pipeline === 'Hired');
+  const hiredAppsList = hiredApps.map(a => ({
+    name: a.Full_Name || a.Email || 'Sin nombre',
+    job: a.Job_Opening_Name || '—',
+    date: a.Modified_Time ? new Date(a.Modified_Time).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
+  }));
+
+  // Avg days from candidate creation to application creation
+  const appDays = apps.filter(a => a.Created_Time && a.$Candidate_Id).map(a => {
+    const cand = candidates.find(c => c.id === a.$Candidate_Id);
+    if (!cand || !cand.Created_Time) return null;
+    const diff = (new Date(a.Created_Time) - new Date(cand.Created_Time)) / (1000 * 60 * 60 * 24);
+    return diff >= 0 ? diff : null;
+  }).filter(d => d !== null);
+  const avgDaysToApp = appDays.length > 0 ? Math.round(appDays.reduce((a,b) => a+b, 0) / appDays.length) : 0;
+
+  // Reactivated candidates: Future Reference who now have an active application
+  const reactivated = poolCandidates.filter(c =>
+    apps.some(a => a.$Candidate_Id === c.id && !CLOSED_STATUSES.includes(a.Application_Status))
+  ).length;
+
+  // Discovery call rate: events with discovery call vs total candidates
+  const discoveryCallRate = pct(screeningCalls, total);
+
+  // Salary bands by level
+  const SALARY_LEVELS = ['Trainee', 'L1', 'L2', 'L3', 'Lead', 'Staff', 'Manager', 'Director'];
+  function salaryBands(candidateList) {
+    var result = [];
+    CATEGORIES.forEach(function(cat) {
+      SALARY_LEVELS.forEach(function(lv) {
+        var salaries = candidateList
+          .filter(function(c) {
+            return (c.Candidate_Category || '').trim() === cat &&
+                   (c.Leveling || '').trim() === lv &&
+                   c.Current_Salary && !isNaN(c.Current_Salary);
+          })
+          .map(function(c) { return Number(c.Current_Salary); });
+        if (salaries.length === 0) return;
+        var min = Math.min.apply(null, salaries);
+        var max = Math.max.apply(null, salaries);
+        var avg = Math.round(salaries.reduce(function(a,b) { return a+b; }, 0) / salaries.length);
+        result.push({ cat: cat, level: lv, min: min, max: max, avg: avg, count: salaries.length });
+      });
+    });
+    return result;
+  }
+  const salaryBandsAll = salaryBands(candidates);
+  const salaryBandsPool = salaryBands(poolCandidates);
+
+  // Availability
+  const available = candidates.filter(c => {
+    const a = (c.Availability || '').toLowerCase();
+    return a === 'unemployed' || a === 'immediate' || a === 'inmediate';
+  }).length;
+  const availablePool = poolCandidates.filter(c => {
+    const a = (c.Availability || '').toLowerCase();
+    return a === 'unemployed' || a === 'immediate' || a === 'inmediate';
+  }).length;
+
+  return {
+    total, apt, screeningCalls, screeningThisWeek,
+    inReview, offered, hired, offerAcceptRate,
+    openJobs, closedJobs, holdJobs, cancelledJobs,
+    totalInterviews, positiveInterviews,
+    poolCandidates: poolCandidates.length, poolByCategory,
+    topCitiesAll, topCitiesPool, topEmployersAll, topEmployersPool,
+    genderAll, genderPool, catAll, monthlyNew,
+    activeApps: activeApps.length, hiredApps: hiredApps.length, hiredAppsList,
+    available, availablePool,
+    salaryBandsAll, salaryBandsPool,
+    avgDaysToApp, reactivated, discoveryCallRate,
+    jobs, candidates
+  };
+}
+
+function generateInsight(s) {
+  const lines = [];
+  const aptRate = pct(s.apt, s.total);
+  if (aptRate < 20) lines.push(`<strong>Aptitud baja (${aptRate}%):</strong> Less than 1 in 5 candidates qualifies for Outpost QA — review sourcing channels or initial contact criteria.`);
+  if (s.screeningThisWeek < 3) lines.push(`<strong>Screening calls this week (${s.screeningThisWeek}/3):</strong> Below weekly standard. Still need ${3 - s.screeningThisWeek} calls to reach the goal.`);
+  if (s.offerAcceptRate > 0 && s.offerAcceptRate < 70) lines.push(`<strong>Offer acceptance (${s.offerAcceptRate}%):</strong> Possible salary misalignment or market competition at final stage.`);
+  if (s.openJobs.length > 0 && s.inReview === 0) lines.push(`<strong>No candidates in review:</strong> There are ${s.openJobs.length} open position(s) with no active pipeline.`);
+  if (lines.length === 0) lines.push('<strong>All good.</strong> Indicators are within expected ranges for this week.');
+  return lines.join('<br><br>');
+}
+
+
+
+function renderSalaryCard(bands, subId, rowsId) {
+  var sub = document.getElementById(subId);
+  var rows = document.getElementById(rowsId);
+  if (!sub || !rows) return;
+  var totalCount = bands.reduce(function(a,b) { return a+b.count; }, 0);
+  sub.textContent = totalCount + ' candidates with salary data · MXN monthly';
+  if (bands.length === 0) {
+    rows.innerHTML = '<div style="font-size:12px;color:var(--hint)">No salary data available</div>';
+    return;
+  }
+  // Group by category
+  var byCategory = {};
+  bands.forEach(function(b) {
+    if (!byCategory[b.cat]) byCategory[b.cat] = [];
+    byCategory[b.cat].push(b);
+  });
+  var globalMax = Math.max.apply(null, bands.map(function(b) { return b.max; }));
+  var html = '';
+  Object.keys(byCategory).forEach(function(cat) {
+    var catBands = byCategory[cat];
+    var catTotal = catBands.reduce(function(a,b) { return a+b.count; }, 0);
+    html += '<div style="margin-bottom:14px">' +
+      '<div style="font-size:11px;font-weight:600;color:var(--text);font-family:var(--mono);letter-spacing:0.04em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">' +
+        cat + ' <span style="font-weight:400;color:var(--hint)">(' + catTotal + ')</span>' +
+      '</div>';
+    catBands.forEach(function(b) {
+      var minPct = (b.min / globalMax) * 100;
+      var maxPct = (b.max / globalMax) * 100;
+      var avgPct = (b.avg / globalMax) * 100;
+      function fmt(v) { return '$' + Number(v).toLocaleString('es-MX'); }
+      html += '<div class="salary-level-row">' +
+        '<div class="salary-level-name">' + b.level + '</div>' +
+        '<div class="salary-bar-wrap">' +
+          '<div class="salary-bar-range" style="left:' + minPct + '%;width:' + (maxPct-minPct) + '%"></div>' +
+          '<div class="salary-bar-avg" style="left:' + avgPct + '%"></div>' +
+        '</div>' +
+        '<div class="salary-stats">' +
+          '<span>' + fmt(b.min) + '</span>' +
+          '<span class="salary-stat-val">' + fmt(b.avg) + '</span>' +
+          '<span>' + fmt(b.max) + '</span>' +
+          '<span class="salary-count">(' + b.count + ')</span>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+  });
+  rows.innerHTML = html;
+}
+
+function renderDashboard(raw) {
+  const s = processData(raw);
+  const aptRate = pct(s.apt, s.total);
+  const interviewPositiveRate = pct(s.positiveInterviews, s.totalInterviews);
+  const weekGoalPct = Math.min(100, pct(s.screeningThisWeek, 3));
+
+  const html = `
+    <div class="top-bar"><span class="last-updated" id="lastUpdated"></span></div>
+    <div class="insight-card">${generateInsight(s)}</div>
+
+    <div class="section-divider">
+      <div class="section-divider-icon" style="background:rgba(245,166,35,0.15)">⚡</div>
+      <div>
+        <div class="section-divider-title">Hiring Pipeline</div>
+        <div class="section-divider-sub">Candidates linked to a job opening — applications &amp; history</div>
+      </div>
+    </div>
+    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px,1fr))">
+      <div class="kpi-card neutral">
+        <div class="kpi-label">ACTIVE APPLICATIONS</div>
+        <div class="kpi-value">${s.activeApps}</div>
+        <div class="kpi-sub">candidates in active hiring pipeline</div>
+      </div>
+      <div class="kpi-card ${s.hiredApps > 0 ? 'good' : ''}" style="grid-column: span 2">
+        <div class="kpi-label">HIRED VIA APP</div>
+        <div class="kpi-value" style="font-size:20px;margin-bottom:10px">${s.hiredApps} hired</div>
+        ${s.hiredAppsList.length > 0 ? s.hiredAppsList.map(h => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border);font-size:12px"><span style="font-weight:500">${h.name}</span><span style="color:var(--muted);font-family:var(--mono)">${h.job} — ${h.date}</span></div>`).join('') : '<div style="font-size:12px;color:var(--hint)">Sin hired registrados</div>'}
+      </div>
+      <div class="kpi-card neutral">
+        <div class="kpi-label">AVG DAYS TO APP</div>
+        <div class="kpi-value">${s.avgDaysToApp}</div>
+        <div class="kpi-sub">from candidate creation to application</div>
+      </div>
+      <div class="kpi-card ${s.reactivated > 0 ? 'good' : 'warn'}">
+        <div class="kpi-label">REACTIVATED CANDIDATES</div>
+        <div class="kpi-value">${s.reactivated}</div>
+        <div class="kpi-sub">Future Reference with active application</div>
+      </div>
+      <div class="kpi-card neutral">
+        <div class="kpi-label">SCHEDULING RATE</div>
+        <div class="kpi-value">${s.discoveryCallRate}%</div>
+        <div class="kpi-sub">${s.screeningCalls} de ${s.total} scheduled a Discovery Call</div>
+      </div>
+    </div>
+    <div class="section-title">Personal Weekly Goal</div>
+    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px,1fr))">
+      <div class="kpi-card ${statusCls(s.screeningThisWeek, 3, 2)}">
+        <div class="kpi-label">SCREENING CALLS THIS WEEK</div>
+        <div class="kpi-value">${s.screeningThisWeek} <span style="font-size:14px;font-weight:400;color:var(--muted)">/ 3</span></div>
+        <div class="goal-bar-wrap">
+          <div class="goal-bar-track"><div class="goal-bar-fill" style="width:${weekGoalPct}%;background:${s.screeningThisWeek >= 3 ? 'var(--green)' : s.screeningThisWeek >= 2 ? 'var(--amber)' : 'var(--red)'}"></div></div>
+          <div class="goal-bar-label">${weekGoalPct}% of weekly goal</div>
+        </div>
+      </div>
+    </div>
+    <div class="section-title">Interviews</div>
+    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px,1fr))">
+      <div class="kpi-card neutral"><div class="kpi-label">TOTAL INTERVIEWS</div><div class="kpi-value">${s.totalInterviews}</div><div class="kpi-sub">registered in Zoho</div></div>
+      <div class="kpi-card ${statusCls(interviewPositiveRate, 50, 30)}"><div class="kpi-label">POSITIVE OUTCOME</div><div class="kpi-value">${s.positiveInterviews}</div><div class="kpi-sub">${interviewPositiveRate}% — Move to Next Round</div></div>
+    </div>
+
+    <div class="section-divider">
+      <div class="section-divider-icon" style="background:rgba(74,143,255,0.15)">👥</div>
+      <div>
+        <div class="section-divider-title">All Candidates</div>
+        <div class="section-divider-sub">${s.total} in database · ${s.screeningCalls} with Discovery Call · ${s.available} currently unemployed</div>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card neutral"><div class="kpi-label">TOTAL CANDIDATES</div><div class="kpi-value">${s.total}</div><div class="kpi-sub">in database</div></div>
+      <div class="kpi-card neutral"><div class="kpi-label">CURRENTLY UNEMPLOYED</div><div class="kpi-value">${s.available}</div><div class="kpi-sub">${pct(s.available, s.screeningCalls)}% de los que tuvieron Discovery Call</div></div>
+      <div class="kpi-card neutral"><div class="kpi-label">SCREENING CALLS</div><div class="kpi-value">${s.screeningCalls}</div><div class="kpi-sub">${pct(s.screeningCalls, s.total)}% of contacted</div></div>
+      <div class="kpi-card ${s.inReview > 0 ? 'good' : 'warn'}"><div class="kpi-label">IN REVIEW</div><div class="kpi-value">${s.inReview}</div><div class="kpi-sub">status = In Review</div></div>
+      <div class="kpi-card ${s.offered > 0 ? 'neutral' : ''}"><div class="kpi-label">OFFERS SENT</div><div class="kpi-value">${s.offered}</div><div class="kpi-sub">stage = Offer</div></div>
+      <div class="kpi-card ${s.hired > 0 ? 'good' : ''}"><div class="kpi-label">HIRED</div><div class="kpi-value">${s.hired}</div><div class="kpi-sub">stage = Hired</div></div>
+      <div class="kpi-card ${statusCls(s.offerAcceptRate, 70, 50)}"><div class="kpi-label">OFFER ACCEPTANCE</div><div class="kpi-value">${s.offered > 0 ? s.offerAcceptRate + '%' : '—'}</div><div class="kpi-sub">${s.hired} hired de ${s.offered} offers</div></div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">New Candidates per Month</div><div class="chart-desc">Last 6 months</div>
+        <div style="position:relative;width:100%;height:240px;"><canvas id="monthlyChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Gender Distribution</div><div class="chart-desc">All Candidates</div>
+        <div style="position:relative;width:100%;height:240px;"><canvas id="genderAllChart"></canvas></div>
+      </div>
+    </div>
+    <div class="charts-row" style="margin-bottom:14px">
+      <div class="chart-card">
+        <div class="chart-title">Top 5 Cities</div><div class="chart-desc">All Candidates</div>
+        <div style="position:relative;width:100%;height:240px;"><canvas id="citiesAllChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Conversion Funnel</div><div class="chart-desc">De contactados a hired</div>
+        <div class="legend-row">
+          <div class="legend-item"><span class="legend-sq" style="background:#4a8fff"></span>Candidates</div>
+          <div class="legend-item"><span class="legend-sq" style="background:#3ecf8e"></span>Conversion %</div>
+        </div>
+        <div style="position:relative;width:100%;height:240px;"><canvas id="funnelChart"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-bottom:14px">
+      <div class="chart-title">Candidates por categoría</div><div class="chart-desc">Top 8 categories</div>
+      <div style="position:relative;width:100%;height:${Math.max(200, s.catAll.length * 36)}px;"><canvas id="catAllChart"></canvas></div>
+    </div>
+    <div class="chart-card" style="margin-bottom:14px">
+      <div class="chart-title">Top 10 Source Companies</div><div class="chart-desc">Competitive intelligence</div>
+      <div style="position:relative;width:100%;height:${Math.max(200, s.topEmployersAll.length * 32)}px;"><canvas id="employersAllChart"></canvas></div>
+    </div>
+
+    <div class="section-divider">
+      <div class="section-divider-icon" style="background:rgba(62,207,142,0.15)">🎯</div>
+      <div>
+        <div class="section-divider-title">Talent Pool — Future Reference</div>
+        <div class="section-divider-sub">${s.poolCandidates} qualified candidates · ${s.poolByCategory.length} categories · ${s.availablePool} currently unemployed</div>
+      </div>
+    </div>
+    <div class="pool-summary-card">
+      <div class="pool-summary-stat"><div class="pool-summary-val">${s.poolCandidates}</div><div class="pool-summary-lbl">candidates in pool</div></div>
+      <div class="pool-summary-stat"><div class="pool-summary-val">${s.poolByCategory.length}</div><div class="pool-summary-lbl">categories represented</div></div>
+      <div class="pool-summary-stat"><div class="pool-summary-val">${pct(s.poolCandidates, s.total)}%</div><div class="pool-summary-lbl">of total candidates</div></div>
+      <div class="pool-summary-stat"><div class="pool-summary-val">${s.availablePool}</div><div class="pool-summary-lbl">currently unemployed</div></div>
+    </div>
+    <div class="pool-grid">
+      ${s.poolByCategory.map(cat => {
+        const maxCount = Math.max(...cat.byLevel.map(l => l.count), 1);
+        const levelRows = cat.byLevel.map(l => `<div class="pool-level-row"><div class="pool-level-name">${l.level}</div><div class="pool-level-bar-track"><div class="pool-level-bar-fill" style="width:${Math.round((l.count/maxCount)*100)}%"></div></div><div class="pool-level-count">${l.count}</div></div>`).join('');
+        const unleveledRow = cat.unleveled > 0 ? `<div class="pool-level-row"><div class="pool-level-name" style="color:var(--hint)">No level</div><div class="pool-level-bar-track"><div class="pool-level-bar-fill" style="width:${Math.round((cat.unleveled/maxCount)*100)}%;background:var(--hint)"></div></div><div class="pool-level-count" style="color:var(--hint)">${cat.unleveled}</div></div>` : '';
+        return `<div class="pool-card"><div class="pool-card-header"><div class="pool-card-title">${cat.cat}</div><div class="pool-card-total">${cat.total} total</div></div><div class="pool-levels">${levelRows}${unleveledRow}</div></div>`;
+      }).join('') || '<div style="color:var(--hint);font-size:12px;padding:8px 0">No future reference candidates registered</div>'}
+    </div>
+    <div class="charts-row" style="margin-bottom:14px">
+      <div class="chart-card">
+        <div class="chart-title">Top 5 Cities — Future Reference</div><div class="chart-desc">Geographic distribution of the pool</div>
+        <div style="position:relative;width:100%;height:240px;"><canvas id="citiesPoolChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Gender Distribution — Future Reference</div><div class="chart-desc">Qualified talent pool</div>
+        <div style="position:relative;width:100%;height:240px;"><canvas id="genderPoolChart"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-bottom:14px">
+      <div class="chart-title">Top 10 Companies — Future Reference</div><div class="chart-desc">Where your qualified candidates come from</div>
+      <div style="position:relative;width:100%;height:${Math.max(200, s.topEmployersPool.length * 32)}px;"><canvas id="employersPoolChart"></canvas></div>
+    </div>
+
+    <div class="section-title">Salary Band by Level</div>
+    <div class="salary-grid">
+      <div class="salary-card" id="salaryAllCard">
+        <div class="salary-card-title">All Candidates</div>
+        <div class="salary-card-sub" id="salaryAllSub"></div>
+        <div id="salaryAllRows"></div>
+      </div>
+      <div class="salary-card" id="salaryPoolCard">
+        <div class="salary-card-title">Future Reference — Talent Pool</div>
+        <div class="salary-card-sub" id="salaryPoolSub"></div>
+        <div id="salaryPoolRows"></div>
+      </div>
+    </div>
+
+    <div class="section-title">Job Openings</div>
+    <div class="table-card">
+      <table>
+        <thead><tr><th>POSITION</th><th>AREA</th><th>STATUS</th><th>DATE</th></tr></thead>
+        <tbody>
+          ${raw.jobs.slice(0, 10).map(j => {
+            const st = (j.Job_Opening_Status || '').toLowerCase();
+            const isOpen = st.includes('open'), isHold = st.includes('hold'), isCancelled = st.includes('cancel'), isFilled = st.includes('filled');
+            const cls = isOpen ? 'badge-open' : isHold ? 'badge-hold' : isFilled ? 'badge-filled' : isCancelled ? 'badge' : 'badge-closed';
+            const label = isOpen ? 'Open' : isHold ? 'On Hold' : isFilled ? 'Filled' : isCancelled ? 'Cancelled' : 'Closed';
+            const date = j.Date_Opened ? new Date(j.Date_Opened).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
+            return `<tr><td style="font-weight:500">${j.Job_Opening_Name || '—'}</td><td style="color:var(--muted)">${j.Client_Name?.name || j.Client_Name || '—'}</td><td><span class="badge ${cls}">${label}</span></td><td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${date}</td></tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  document.getElementById('mainContent').innerHTML = html;
+
+  // Charts
+  const CITY_COLORS = ['rgba(74,143,255,0.8)','rgba(62,207,142,0.8)','rgba(245,166,35,0.8)','rgba(255,95,95,0.8)','rgba(168,85,247,0.8)'];
+
+  if (funnelChart) funnelChart.destroy();
+  const funnelLabels = ['Contactados', 'Con call', 'Aptos', 'In Review', 'Ofertas', 'Contratados'];
+  const funnelData = [s.total, s.screeningCalls, s.apt, s.inReview, s.offered, s.hired];
+  const convRates = [100, pct(s.screeningCalls, s.total), pct(s.apt, s.total), pct(s.inReview, s.apt || 1), pct(s.offered, s.inReview || 1), pct(s.hired, s.offered || 1)];
+  funnelChart = new Chart(document.getElementById('funnelChart'), {
+    type: 'bar',
+    data: { labels: funnelLabels, datasets: [
+      { label: 'Candidates', data: funnelData, backgroundColor: 'rgba(74,143,255,0.7)', borderRadius: 4, yAxisID: 'y' },
+      { label: 'Conversion %', data: convRates, type: 'line', tension: 0.3, pointRadius: 4, borderColor: '#3ecf8e', backgroundColor: '#3ecf8e', borderWidth: 2, fill: false, yAxisID: 'y2' }
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b6b67', font: { size: 10, family: 'DM Mono' }, autoSkip: false, maxRotation: 30 }, grid: { display: false } },
+        y: { position: 'left', ticks: { color: '#6b6b67', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+        y2: { position: 'right', min: 0, max: 100, ticks: { callback: v => v + '%', color: '#6b6b67', font: { size: 10 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  if (window._monthlyChart) window._monthlyChart.destroy();
+  window._monthlyChart = new Chart(document.getElementById('monthlyChart'), {
+    type: 'bar',
+    data: { labels: s.monthlyNew.map(m => m.label), datasets: [{ label: 'Nuevos', data: s.monthlyNew.map(m => m.count), backgroundColor: 'rgba(74,143,255,0.7)', borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: '#6b6b67', font: { size: 11, family: 'DM Mono' } }, grid: { display: false } }, y: { ticks: { color: '#6b6b67' }, grid: { color: 'rgba(0,0,0,0.06)' } } } }
+  });
+
+  if (window._genderAllChart) window._genderAllChart.destroy();
+  window._genderAllChart = new Chart(document.getElementById('genderAllChart'), {
+    type: 'doughnut',
+    data: { labels: ['Male (' + s.genderAll.male + ')', 'Female (' + s.genderAll.female + ')', 'N/A (' + s.genderAll.other + ')'],
+      datasets: [{ data: [s.genderAll.male, s.genderAll.female, s.genderAll.other], backgroundColor: ['rgba(74,143,255,0.8)', 'rgba(255,95,95,0.8)', 'rgba(168,85,247,0.5)'], borderWidth: 1, hoverOffset: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'left', labels: { color: '#6b6b67', font: { size: 12, family: 'DM Mono' }, boxWidth: 12, padding: 14 } } }, cutout: '55%' }
+  });
+
+  if (window._citiesAllChart) window._citiesAllChart.destroy();
+  window._citiesAllChart = new Chart(document.getElementById('citiesAllChart'), {
+    type: 'doughnut',
+    data: { labels: s.topCitiesAll.map(c => c.label + ' (' + c.count + ')'), datasets: [{ data: s.topCitiesAll.map(c => c.count), backgroundColor: CITY_COLORS, borderWidth: 1, hoverOffset: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'left', labels: { color: '#6b6b67', font: { size: 12, family: 'DM Mono' }, boxWidth: 12, padding: 14 } } }, cutout: '55%' }
+  });
+
+  if (window._catAllChart) window._catAllChart.destroy();
+  window._catAllChart = new Chart(document.getElementById('catAllChart'), {
+    type: 'bar',
+    data: { labels: s.catAll.map(c => c.cat), datasets: [{ label: 'Candidates', data: s.catAll.map(c => c.count), backgroundColor: 'rgba(74,143,255,0.7)', borderRadius: 4 }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: '#6b6b67' }, grid: { color: 'rgba(0,0,0,0.06)' } }, y: { ticks: { color: '#6b6b67', font: { size: 11, family: 'DM Mono' } }, grid: { display: false } } } }
+  });
+
+  if (window._employersAllChart) window._employersAllChart.destroy();
+  window._employersAllChart = new Chart(document.getElementById('employersAllChart'), {
+    type: 'bar',
+    data: { labels: s.topEmployersAll.map(e => e.label), datasets: [{ label: 'Candidates', data: s.topEmployersAll.map(e => e.count), backgroundColor: 'rgba(74,143,255,0.7)', borderRadius: 4 }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: '#6b6b67' }, grid: { color: 'rgba(0,0,0,0.06)' } }, y: { ticks: { color: '#6b6b67', font: { size: 10, family: 'DM Mono' } }, grid: { display: false } } } }
+  });
+
+  if (window._citiesPoolChart) window._citiesPoolChart.destroy();
+  window._citiesPoolChart = new Chart(document.getElementById('citiesPoolChart'), {
+    type: 'doughnut',
+    data: { labels: s.topCitiesPool.map(c => c.label + ' (' + c.count + ')'), datasets: [{ data: s.topCitiesPool.map(c => c.count), backgroundColor: ['rgba(62,207,142,0.8)','rgba(74,143,255,0.8)','rgba(245,166,35,0.8)','rgba(255,95,95,0.8)','rgba(168,85,247,0.8)'], borderWidth: 1, hoverOffset: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'left', labels: { color: '#6b6b67', font: { size: 12, family: 'DM Mono' }, boxWidth: 12, padding: 14 } } }, cutout: '55%' }
+  });
+
+  if (window._genderPoolChart) window._genderPoolChart.destroy();
+  window._genderPoolChart = new Chart(document.getElementById('genderPoolChart'), {
+    type: 'doughnut',
+    data: { labels: ['Male (' + s.genderPool.male + ')', 'Female (' + s.genderPool.female + ')', 'N/A (' + s.genderPool.other + ')'],
+      datasets: [{ data: [s.genderPool.male, s.genderPool.female, s.genderPool.other], backgroundColor: ['rgba(74,143,255,0.8)', 'rgba(255,95,95,0.8)', 'rgba(168,85,247,0.5)'], borderWidth: 1, hoverOffset: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'left', labels: { color: '#6b6b67', font: { size: 12, family: 'DM Mono' }, boxWidth: 12, padding: 14 } } }, cutout: '55%' }
+  });
+
+  if (window._employersPoolChart) window._employersPoolChart.destroy();
+  window._employersPoolChart = new Chart(document.getElementById('employersPoolChart'), {
+    type: 'bar',
+    data: { labels: s.topEmployersPool.map(e => e.label), datasets: [{ label: 'Candidates', data: s.topEmployersPool.map(e => e.count), backgroundColor: 'rgba(62,207,142,0.7)', borderRadius: 4 }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: '#6b6b67' }, grid: { color: 'rgba(0,0,0,0.06)' } }, y: { ticks: { color: '#6b6b67', font: { size: 10, family: 'DM Mono' } }, grid: { display: false } } } }
+  });
+
+  renderSalaryCard(s.salaryBandsAll, 'salaryAllSub', 'salaryAllRows');
+  renderSalaryCard(s.salaryBandsPool, 'salaryPoolSub', 'salaryPoolRows');
+
+  const el = document.getElementById('lastUpdated');
+  if (el) el.textContent = `Updated ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+// ⚠️ Reemplaza esta URL con la de tu Web App de Google Apps Script
+var APPS_SCRIPT_URL = 'https://script.google.com/a/macros/outpostqa.com/s/AKfycbzsN9nmr6BCzDXljrHUsSUWlKK4bk79wQQH8cGlrL10zMkTvnJZnZGJ8OjjdkGXa9O4tg/exec';
+
+async function loadData() {
+  const btn = document.getElementById('btnRefresh');
+  const icon = document.getElementById('refreshIcon');
+  btn.disabled = true;
+  icon.className = 'spin';
+  setStatus('', 'connecting...');
+  try {
+    if (APPS_SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') {
+      throw new Error('Configure APPS_SCRIPT_URL in the dashboard HTML');
+    }
+    const res = await fetch(APPS_SCRIPT_URL);
+    if (!res.ok) throw new Error('Server error ' + res.status);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    setStatus('active', 'connected');
+    renderDashboard(data);
+    btn.disabled = false;
+  } catch (err) {
+    setStatus('', 'error');
+    document.getElementById('mainContent').innerHTML =
+      '<div class="state-screen">' +
+        '<div style="color:var(--red);font-size:28px">⚠</div>' +
+        '<div class="error-msg">Connection failed</div>' +
+        '<div class="error-detail">' + err.message + '</div>' +
+        '<button class="btn-refresh" style="margin-top:12px" onclick="loadData()">Try again</button>' +
+      '</div>';
+  } finally {
+    icon.className = '';
+    icon.textContent = '↻';
+    btn.disabled = false;
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
