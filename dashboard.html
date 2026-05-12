@@ -172,6 +172,19 @@
     margin-top: 2px;
   }
 
+  .salary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .salary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .salary-card-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .salary-card-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 14px; }
+  .salary-level-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .salary-level-name { font-size: 11px; font-family: var(--mono); color: var(--muted); width: 52px; flex-shrink: 0; }
+  .salary-bar-wrap { flex: 1; position: relative; height: 8px; background: var(--surface2); border-radius: 4px; }
+  .salary-bar-range { position: absolute; height: 100%; border-radius: 4px; background: rgba(74,143,255,0.3); }
+  .salary-bar-avg { position: absolute; width: 3px; height: 100%; border-radius: 2px; background: var(--blue); transform: translateX(-50%); }
+  .salary-stats { display: flex; gap: 8px; font-size: 10px; font-family: var(--mono); color: var(--hint); width: 160px; flex-shrink: 0; justify-content: flex-end; }
+  .salary-stat-val { color: var(--text); font-weight: 500; }
+  .salary-count { font-size: 10px; color: var(--hint); font-family: var(--mono); }
+
   .pool-summary-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 0 10px 10px 0; padding: 14px 18px; margin-bottom: 14px; display: flex; gap: 32px; flex-wrap: wrap; align-items: center; }
   .pool-summary-stat { display: flex; flex-direction: column; gap: 2px; }
   .pool-summary-val { font-size: 22px; font-weight: 600; color: var(--green); line-height: 1; }
@@ -424,6 +437,23 @@ function processData({ candidates, jobs, interviews, events, applications }) {
   // Discovery call rate: events with discovery call vs total candidates
   const discoveryCallRate = pct(screeningCalls, total);
 
+  // Salary bands by level
+  const SALARY_LEVELS = ['Trainee', 'L1', 'L2', 'L3', 'Lead', 'Staff', 'Manager', 'Director'];
+  function salaryBands(candidateList) {
+    return SALARY_LEVELS.map(lv => {
+      const salaries = candidateList
+        .filter(c => (c.Leveling || '').trim() === lv && c.Current_Salary && !isNaN(c.Current_Salary))
+        .map(c => Number(c.Current_Salary));
+      if (salaries.length === 0) return null;
+      const min = Math.min(...salaries);
+      const max = Math.max(...salaries);
+      const avg = Math.round(salaries.reduce((a,b) => a+b, 0) / salaries.length);
+      return { level: lv, min, max, avg, count: salaries.length };
+    }).filter(Boolean);
+  }
+  const salaryBandsAll = salaryBands(candidates);
+  const salaryBandsPool = salaryBands(poolCandidates);
+
   // Availability
   const available = candidates.filter(c => {
     const a = (c.Availability || '').toLowerCase();
@@ -444,6 +474,7 @@ function processData({ candidates, jobs, interviews, events, applications }) {
     genderAll, genderPool, catAll, monthlyNew,
     activeApps: activeApps.length, hiredApps: hiredApps.length, hiredAppsList,
     available, availablePool,
+    salaryBandsAll, salaryBandsPool,
     avgDaysToApp, reactivated, discoveryCallRate,
     jobs, candidates
   };
@@ -606,6 +637,62 @@ function renderDashboard(raw) {
     <div class="chart-card" style="margin-bottom:14px">
       <div class="chart-title">Top 10 empresas — Future Reference</div><div class="chart-desc">De dónde provienen tus candidatos aptos</div>
       <div style="position:relative;width:100%;height:${Math.max(200, s.topEmployersPool.length * 32)}px;"><canvas id="employersPoolChart"></canvas></div>
+    </div>
+
+    <div class="section-title">Banda salarial por nivel</div>
+    <div class="salary-grid">
+      <div class="salary-card">
+        <div class="salary-card-title">Todos los candidatos</div>
+        <div class="salary-card-sub">${s.salaryBandsAll.reduce((a,b) => a+b.count, 0)} candidatos con salario capturado · MXN mensual</div>
+        ${s.salaryBandsAll.length > 0 ? (() => {
+          const globalMax = Math.max(...s.salaryBandsAll.map(b => b.max));
+          return s.salaryBandsAll.map(b => {
+            const minPct = (b.min / globalMax) * 100;
+            const maxPct = (b.max / globalMax) * 100;
+            const avgPct = (b.avg / globalMax) * 100;
+            const fmt = v => '$' + v.toLocaleString('es-MX');
+            return \`<div class="salary-level-row">
+              <div class="salary-level-name">\${b.level}</div>
+              <div class="salary-bar-wrap">
+                <div class="salary-bar-range" style="left:\${minPct}%;width:\${maxPct-minPct}%"></div>
+                <div class="salary-bar-avg" style="left:\${avgPct}%"></div>
+              </div>
+              <div class="salary-stats">
+                <span>\${fmt(b.min)}</span>
+                <span class="salary-stat-val">\${fmt(b.avg)}</span>
+                <span>\${fmt(b.max)}</span>
+                <span class="salary-count">(\${b.count})</span>
+              </div>
+            </div>\`;
+          }).join('');
+        })() : '<div style="font-size:12px;color:var(--hint)">Sin datos salariales capturados</div>'}
+      </div>
+      <div class="salary-card">
+        <div class="salary-card-title">Future Reference — pool de talento</div>
+        <div class="salary-card-sub">${s.salaryBandsPool.reduce((a,b) => a+b.count, 0)} candidatos con salario capturado · MXN mensual</div>
+        ${s.salaryBandsPool.length > 0 ? (() => {
+          const globalMax = Math.max(...s.salaryBandsPool.map(b => b.max));
+          return s.salaryBandsPool.map(b => {
+            const minPct = (b.min / globalMax) * 100;
+            const maxPct = (b.max / globalMax) * 100;
+            const avgPct = (b.avg / globalMax) * 100;
+            const fmt = v => '$' + v.toLocaleString('es-MX');
+            return \`<div class="salary-level-row">
+              <div class="salary-level-name">\${b.level}</div>
+              <div class="salary-bar-wrap">
+                <div class="salary-bar-range" style="left:\${minPct}%;width:\${maxPct-minPct}%"></div>
+                <div class="salary-bar-avg" style="left:\${avgPct}%"></div>
+              </div>
+              <div class="salary-stats">
+                <span>\${fmt(b.min)}</span>
+                <span class="salary-stat-val">\${fmt(b.avg)}</span>
+                <span>\${fmt(b.max)}</span>
+                <span class="salary-count">(\${b.count})</span>
+              </div>
+            </div>\`;
+          }).join('');
+        })() : '<div style="font-size:12px;color:var(--hint)">Sin datos salariales en el pool</div>'}
+      </div>
     </div>
 
     <div class="section-title">Job openings</div>
