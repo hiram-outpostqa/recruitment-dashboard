@@ -250,10 +250,18 @@ function statusCls(val, good, warn, higherBetter = true) {
 }
 
 function getWeekStart() {
-  const d = new Date();
+  // Use Mexico timezone offset (GMT-6)
+  const now = new Date();
+  const mexicoOffset = -6 * 60;
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const mexicoMs = utcMs + mexicoOffset * 60000;
+  const d = new Date(mexicoMs);
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.setDate(diff));
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
+  // Convert back to UTC for comparison
+  return new Date(d.getTime() - mexicoOffset * 60000);
 }
 
 function processData({ candidates, jobs, interviews, events, applications }) {
