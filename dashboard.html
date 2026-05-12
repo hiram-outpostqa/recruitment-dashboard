@@ -229,7 +229,7 @@
 <div class="main" id="mainContent">
   <div class="state-screen">
     <div class="loader"></div>
-    <span>Conectando con Zoho Recruit...</span>
+    <span>Connecting to Zoho Recruit...</span>
   </div>
 </div>
 
@@ -491,11 +491,11 @@ function processData({ candidates, jobs, interviews, events, applications }) {
 function generateInsight(s) {
   const lines = [];
   const aptRate = pct(s.apt, s.total);
-  if (aptRate < 20) lines.push(`<strong>Aptitud baja (${aptRate}%):</strong> Menos de 1 de cada 5 candidatos califica como apto para Outpost QA — revisar fuentes de búsqueda o criterios de contacto inicial.`);
-  if (s.screeningThisWeek < 3) lines.push(`<strong>Screening calls esta semana (${s.screeningThisWeek}/3):</strong> Por debajo del estándar semanal. Quedan ${3 - s.screeningThisWeek} calls para llegar a la meta.`);
-  if (s.offerAcceptRate > 0 && s.offerAcceptRate < 70) lines.push(`<strong>Aceptación de oferta (${s.offerAcceptRate}%):</strong> Posible desalineación salarial o competencia de mercado en etapa final.`);
-  if (s.openJobs.length > 0 && s.inReview === 0) lines.push(`<strong>Sin candidatos en revisión:</strong> Hay ${s.openJobs.length} posición(es) abierta(s) sin pipeline activo.`);
-  if (lines.length === 0) lines.push('<strong>Todo en orden.</strong> Los indicadores están dentro de los rangos esperados para esta semana.');
+  if (aptRate < 20) lines.push(`<strong>Aptitud baja (${aptRate}%):</strong> Less than 1 in 5 candidates qualifies for Outpost QA — review sourcing channels or initial contact criteria.`);
+  if (s.screeningThisWeek < 3) lines.push(`<strong>Screening calls this week (${s.screeningThisWeek}/3):</strong> Below weekly standard. Still need ${3 - s.screeningThisWeek} calls to reach the goal.`);
+  if (s.offerAcceptRate > 0 && s.offerAcceptRate < 70) lines.push(`<strong>Offer acceptance (${s.offerAcceptRate}%):</strong> Possible salary misalignment or market competition at final stage.`);
+  if (s.openJobs.length > 0 && s.inReview === 0) lines.push(`<strong>No candidates in review:</strong> There are ${s.openJobs.length} open position(s) with no active pipeline.`);
+  if (lines.length === 0) lines.push('<strong>All good.</strong> Indicators are within expected ranges for this week.');
   return lines.join('<br><br>');
 }
 
@@ -506,9 +506,9 @@ function renderSalaryCard(bands, subId, rowsId) {
   var rows = document.getElementById(rowsId);
   if (!sub || !rows) return;
   var totalCount = bands.reduce(function(a,b) { return a+b.count; }, 0);
-  sub.textContent = totalCount + ' candidatos con salario capturado · MXN mensual';
+  sub.textContent = totalCount + ' candidates with salary data · MXN monthly';
   if (bands.length === 0) {
-    rows.innerHTML = '<div style="font-size:12px;color:var(--hint)">Sin datos salariales capturados</div>';
+    rows.innerHTML = '<div style="font-size:12px;color:var(--hint)">No salary data available</div>';
     return;
   }
   // Group by category
@@ -563,157 +563,157 @@ function renderDashboard(raw) {
     <div class="section-divider">
       <div class="section-divider-icon" style="background:rgba(245,166,35,0.15)">⚡</div>
       <div>
-        <div class="section-divider-title">Pipeline de contratación</div>
-        <div class="section-divider-sub">Candidatos vinculados a una vacante — applications e historial</div>
+        <div class="section-divider-title">Hiring Pipeline</div>
+        <div class="section-divider-sub">Candidates linked to a job opening — applications &amp; history</div>
       </div>
     </div>
     <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px,1fr))">
       <div class="kpi-card neutral">
-        <div class="kpi-label">APPLICATIONS ACTIVAS</div>
+        <div class="kpi-label">ACTIVE APPLICATIONS</div>
         <div class="kpi-value">${s.activeApps}</div>
-        <div class="kpi-sub">candidatos en pipeline activo de contratación</div>
+        <div class="kpi-sub">candidates in active hiring pipeline</div>
       </div>
       <div class="kpi-card ${s.hiredApps > 0 ? 'good' : ''}" style="grid-column: span 2">
-        <div class="kpi-label">CONTRATADOS VÍA APP</div>
-        <div class="kpi-value" style="font-size:20px;margin-bottom:10px">${s.hiredApps} contratados</div>
-        ${s.hiredAppsList.length > 0 ? s.hiredAppsList.map(h => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border);font-size:12px"><span style="font-weight:500">${h.name}</span><span style="color:var(--muted);font-family:var(--mono)">${h.job} — ${h.date}</span></div>`).join('') : '<div style="font-size:12px;color:var(--hint)">Sin contratados registrados</div>'}
+        <div class="kpi-label">HIRED VIA APP</div>
+        <div class="kpi-value" style="font-size:20px;margin-bottom:10px">${s.hiredApps} hired</div>
+        ${s.hiredAppsList.length > 0 ? s.hiredAppsList.map(h => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border);font-size:12px"><span style="font-weight:500">${h.name}</span><span style="color:var(--muted);font-family:var(--mono)">${h.job} — ${h.date}</span></div>`).join('') : '<div style="font-size:12px;color:var(--hint)">Sin hired registrados</div>'}
       </div>
       <div class="kpi-card neutral">
-        <div class="kpi-label">DÍAS PROMEDIO A APP</div>
+        <div class="kpi-label">AVG DAYS TO APP</div>
         <div class="kpi-value">${s.avgDaysToApp}</div>
-        <div class="kpi-sub">desde creación de candidato a application</div>
+        <div class="kpi-sub">from candidate creation to application</div>
       </div>
       <div class="kpi-card ${s.reactivated > 0 ? 'good' : 'warn'}">
-        <div class="kpi-label">CANDIDATOS REACTIVADOS</div>
+        <div class="kpi-label">REACTIVATED CANDIDATES</div>
         <div class="kpi-value">${s.reactivated}</div>
-        <div class="kpi-sub">Future Reference con application activa</div>
+        <div class="kpi-sub">Future Reference with active application</div>
       </div>
       <div class="kpi-card neutral">
-        <div class="kpi-label">TASA DE AGENDADO</div>
+        <div class="kpi-label">SCHEDULING RATE</div>
         <div class="kpi-value">${s.discoveryCallRate}%</div>
-        <div class="kpi-sub">${s.screeningCalls} de ${s.total} agendaron Discovery Call</div>
+        <div class="kpi-sub">${s.screeningCalls} de ${s.total} scheduled a Discovery Call</div>
       </div>
     </div>
-    <div class="section-title">Meta personal semanal</div>
+    <div class="section-title">Personal Weekly Goal</div>
     <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px,1fr))">
       <div class="kpi-card ${statusCls(s.screeningThisWeek, 3, 2)}">
-        <div class="kpi-label">SCREENING CALLS ESTA SEMANA</div>
+        <div class="kpi-label">SCREENING CALLS THIS WEEK</div>
         <div class="kpi-value">${s.screeningThisWeek} <span style="font-size:14px;font-weight:400;color:var(--muted)">/ 3</span></div>
         <div class="goal-bar-wrap">
           <div class="goal-bar-track"><div class="goal-bar-fill" style="width:${weekGoalPct}%;background:${s.screeningThisWeek >= 3 ? 'var(--green)' : s.screeningThisWeek >= 2 ? 'var(--amber)' : 'var(--red)'}"></div></div>
-          <div class="goal-bar-label">${weekGoalPct}% de la meta semanal</div>
+          <div class="goal-bar-label">${weekGoalPct}% of weekly goal</div>
         </div>
       </div>
     </div>
-    <div class="section-title">Entrevistas</div>
+    <div class="section-title">Interviews</div>
     <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px,1fr))">
-      <div class="kpi-card neutral"><div class="kpi-label">TOTAL ENTREVISTAS</div><div class="kpi-value">${s.totalInterviews}</div><div class="kpi-sub">registradas en Zoho</div></div>
-      <div class="kpi-card ${statusCls(interviewPositiveRate, 50, 30)}"><div class="kpi-label">RESULTADO POSITIVO</div><div class="kpi-value">${s.positiveInterviews}</div><div class="kpi-sub">${interviewPositiveRate}% — Move to Next Round</div></div>
+      <div class="kpi-card neutral"><div class="kpi-label">TOTAL INTERVIEWS</div><div class="kpi-value">${s.totalInterviews}</div><div class="kpi-sub">registered in Zoho</div></div>
+      <div class="kpi-card ${statusCls(interviewPositiveRate, 50, 30)}"><div class="kpi-label">POSITIVE OUTCOME</div><div class="kpi-value">${s.positiveInterviews}</div><div class="kpi-sub">${interviewPositiveRate}% — Move to Next Round</div></div>
     </div>
 
     <div class="section-divider">
       <div class="section-divider-icon" style="background:rgba(74,143,255,0.15)">👥</div>
       <div>
-        <div class="section-divider-title">Todos los candidatos</div>
-        <div class="section-divider-sub">${s.total} en base de datos · ${s.screeningCalls} con Discovery Call · ${s.available} sin empleo actual</div>
+        <div class="section-divider-title">All Candidates</div>
+        <div class="section-divider-sub">${s.total} in database · ${s.screeningCalls} with Discovery Call · ${s.available} currently unemployed</div>
       </div>
     </div>
     <div class="kpi-grid">
-      <div class="kpi-card neutral"><div class="kpi-label">TOTAL CANDIDATOS</div><div class="kpi-value">${s.total}</div><div class="kpi-sub">en base de datos</div></div>
-      <div class="kpi-card neutral"><div class="kpi-label">SIN EMPLEO ACTUAL</div><div class="kpi-value">${s.available}</div><div class="kpi-sub">${pct(s.available, s.screeningCalls)}% de los que tuvieron Discovery Call</div></div>
-      <div class="kpi-card neutral"><div class="kpi-label">SCREENING CALLS</div><div class="kpi-value">${s.screeningCalls}</div><div class="kpi-sub">${pct(s.screeningCalls, s.total)}% de contactados</div></div>
-      <div class="kpi-card ${s.inReview > 0 ? 'good' : 'warn'}"><div class="kpi-label">EN REVISIÓN</div><div class="kpi-value">${s.inReview}</div><div class="kpi-sub">status = In Review</div></div>
-      <div class="kpi-card ${s.offered > 0 ? 'neutral' : ''}"><div class="kpi-label">OFERTAS ENVIADAS</div><div class="kpi-value">${s.offered}</div><div class="kpi-sub">stage = Offer</div></div>
-      <div class="kpi-card ${s.hired > 0 ? 'good' : ''}"><div class="kpi-label">CONTRATADOS</div><div class="kpi-value">${s.hired}</div><div class="kpi-sub">stage = Hired</div></div>
-      <div class="kpi-card ${statusCls(s.offerAcceptRate, 70, 50)}"><div class="kpi-label">ACEPTACIÓN DE OFERTA</div><div class="kpi-value">${s.offered > 0 ? s.offerAcceptRate + '%' : '—'}</div><div class="kpi-sub">${s.hired} contratados de ${s.offered} ofertas</div></div>
+      <div class="kpi-card neutral"><div class="kpi-label">TOTAL CANDIDATES</div><div class="kpi-value">${s.total}</div><div class="kpi-sub">in database</div></div>
+      <div class="kpi-card neutral"><div class="kpi-label">CURRENTLY UNEMPLOYED</div><div class="kpi-value">${s.available}</div><div class="kpi-sub">${pct(s.available, s.screeningCalls)}% de los que tuvieron Discovery Call</div></div>
+      <div class="kpi-card neutral"><div class="kpi-label">SCREENING CALLS</div><div class="kpi-value">${s.screeningCalls}</div><div class="kpi-sub">${pct(s.screeningCalls, s.total)}% of contacted</div></div>
+      <div class="kpi-card ${s.inReview > 0 ? 'good' : 'warn'}"><div class="kpi-label">IN REVIEW</div><div class="kpi-value">${s.inReview}</div><div class="kpi-sub">status = In Review</div></div>
+      <div class="kpi-card ${s.offered > 0 ? 'neutral' : ''}"><div class="kpi-label">OFFERS SENT</div><div class="kpi-value">${s.offered}</div><div class="kpi-sub">stage = Offer</div></div>
+      <div class="kpi-card ${s.hired > 0 ? 'good' : ''}"><div class="kpi-label">HIRED</div><div class="kpi-value">${s.hired}</div><div class="kpi-sub">stage = Hired</div></div>
+      <div class="kpi-card ${statusCls(s.offerAcceptRate, 70, 50)}"><div class="kpi-label">OFFER ACCEPTANCE</div><div class="kpi-value">${s.offered > 0 ? s.offerAcceptRate + '%' : '—'}</div><div class="kpi-sub">${s.hired} hired de ${s.offered} offers</div></div>
     </div>
     <div class="charts-row">
       <div class="chart-card">
-        <div class="chart-title">Candidatos nuevos por mes</div><div class="chart-desc">Últimos 6 meses</div>
+        <div class="chart-title">New Candidates per Month</div><div class="chart-desc">Last 6 months</div>
         <div style="position:relative;width:100%;height:240px;"><canvas id="monthlyChart"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Distribución por género</div><div class="chart-desc">Todos los candidatos</div>
+        <div class="chart-title">Gender Distribution</div><div class="chart-desc">All Candidates</div>
         <div style="position:relative;width:100%;height:240px;"><canvas id="genderAllChart"></canvas></div>
       </div>
     </div>
     <div class="charts-row" style="margin-bottom:14px">
       <div class="chart-card">
-        <div class="chart-title">Top 5 ciudades</div><div class="chart-desc">Todos los candidatos</div>
+        <div class="chart-title">Top 5 Cities</div><div class="chart-desc">All Candidates</div>
         <div style="position:relative;width:100%;height:240px;"><canvas id="citiesAllChart"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Funnel de conversión</div><div class="chart-desc">De contactados a contratados</div>
+        <div class="chart-title">Conversion Funnel</div><div class="chart-desc">De contactados a hired</div>
         <div class="legend-row">
-          <div class="legend-item"><span class="legend-sq" style="background:#4a8fff"></span>Candidatos</div>
-          <div class="legend-item"><span class="legend-sq" style="background:#3ecf8e"></span>Conversión %</div>
+          <div class="legend-item"><span class="legend-sq" style="background:#4a8fff"></span>Candidates</div>
+          <div class="legend-item"><span class="legend-sq" style="background:#3ecf8e"></span>Conversion %</div>
         </div>
         <div style="position:relative;width:100%;height:240px;"><canvas id="funnelChart"></canvas></div>
       </div>
     </div>
     <div class="chart-card" style="margin-bottom:14px">
-      <div class="chart-title">Candidatos por categoría</div><div class="chart-desc">Top 8 categorías</div>
+      <div class="chart-title">Candidates por categoría</div><div class="chart-desc">Top 8 categories</div>
       <div style="position:relative;width:100%;height:${Math.max(200, s.catAll.length * 36)}px;"><canvas id="catAllChart"></canvas></div>
     </div>
     <div class="chart-card" style="margin-bottom:14px">
-      <div class="chart-title">Top 10 empresas de origen</div><div class="chart-desc">Inteligencia competitiva</div>
+      <div class="chart-title">Top 10 Source Companies</div><div class="chart-desc">Competitive intelligence</div>
       <div style="position:relative;width:100%;height:${Math.max(200, s.topEmployersAll.length * 32)}px;"><canvas id="employersAllChart"></canvas></div>
     </div>
 
     <div class="section-divider">
       <div class="section-divider-icon" style="background:rgba(62,207,142,0.15)">🎯</div>
       <div>
-        <div class="section-divider-title">Pool de talento — Future Reference</div>
-        <div class="section-divider-sub">${s.poolCandidates} candidatos aptos · ${s.poolByCategory.length} categorías · ${s.availablePool} sin empleo actual</div>
+        <div class="section-divider-title">Talent Pool — Future Reference</div>
+        <div class="section-divider-sub">${s.poolCandidates} qualified candidates · ${s.poolByCategory.length} categories · ${s.availablePool} currently unemployed</div>
       </div>
     </div>
     <div class="pool-summary-card">
-      <div class="pool-summary-stat"><div class="pool-summary-val">${s.poolCandidates}</div><div class="pool-summary-lbl">candidatos en el pool</div></div>
-      <div class="pool-summary-stat"><div class="pool-summary-val">${s.poolByCategory.length}</div><div class="pool-summary-lbl">categorías representadas</div></div>
-      <div class="pool-summary-stat"><div class="pool-summary-val">${pct(s.poolCandidates, s.total)}%</div><div class="pool-summary-lbl">del total de candidatos</div></div>
-      <div class="pool-summary-stat"><div class="pool-summary-val">${s.availablePool}</div><div class="pool-summary-lbl">sin empleo actual</div></div>
+      <div class="pool-summary-stat"><div class="pool-summary-val">${s.poolCandidates}</div><div class="pool-summary-lbl">candidates in pool</div></div>
+      <div class="pool-summary-stat"><div class="pool-summary-val">${s.poolByCategory.length}</div><div class="pool-summary-lbl">categories represented</div></div>
+      <div class="pool-summary-stat"><div class="pool-summary-val">${pct(s.poolCandidates, s.total)}%</div><div class="pool-summary-lbl">of total candidates</div></div>
+      <div class="pool-summary-stat"><div class="pool-summary-val">${s.availablePool}</div><div class="pool-summary-lbl">currently unemployed</div></div>
     </div>
     <div class="pool-grid">
       ${s.poolByCategory.map(cat => {
         const maxCount = Math.max(...cat.byLevel.map(l => l.count), 1);
         const levelRows = cat.byLevel.map(l => `<div class="pool-level-row"><div class="pool-level-name">${l.level}</div><div class="pool-level-bar-track"><div class="pool-level-bar-fill" style="width:${Math.round((l.count/maxCount)*100)}%"></div></div><div class="pool-level-count">${l.count}</div></div>`).join('');
-        const unleveledRow = cat.unleveled > 0 ? `<div class="pool-level-row"><div class="pool-level-name" style="color:var(--hint)">Sin nivel</div><div class="pool-level-bar-track"><div class="pool-level-bar-fill" style="width:${Math.round((cat.unleveled/maxCount)*100)}%;background:var(--hint)"></div></div><div class="pool-level-count" style="color:var(--hint)">${cat.unleveled}</div></div>` : '';
+        const unleveledRow = cat.unleveled > 0 ? `<div class="pool-level-row"><div class="pool-level-name" style="color:var(--hint)">No level</div><div class="pool-level-bar-track"><div class="pool-level-bar-fill" style="width:${Math.round((cat.unleveled/maxCount)*100)}%;background:var(--hint)"></div></div><div class="pool-level-count" style="color:var(--hint)">${cat.unleveled}</div></div>` : '';
         return `<div class="pool-card"><div class="pool-card-header"><div class="pool-card-title">${cat.cat}</div><div class="pool-card-total">${cat.total} total</div></div><div class="pool-levels">${levelRows}${unleveledRow}</div></div>`;
-      }).join('') || '<div style="color:var(--hint);font-size:12px;padding:8px 0">Sin candidatos de futura referencia</div>'}
+      }).join('') || '<div style="color:var(--hint);font-size:12px;padding:8px 0">No future reference candidates registered</div>'}
     </div>
     <div class="charts-row" style="margin-bottom:14px">
       <div class="chart-card">
-        <div class="chart-title">Top 5 ciudades — Future Reference</div><div class="chart-desc">Distribución geográfica del pool</div>
+        <div class="chart-title">Top 5 Cities — Future Reference</div><div class="chart-desc">Geographic distribution of the pool</div>
         <div style="position:relative;width:100%;height:240px;"><canvas id="citiesPoolChart"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Distribución por género — Future Reference</div><div class="chart-desc">Pool de talento apto</div>
+        <div class="chart-title">Gender Distribution — Future Reference</div><div class="chart-desc">Qualified talent pool</div>
         <div style="position:relative;width:100%;height:240px;"><canvas id="genderPoolChart"></canvas></div>
       </div>
     </div>
     <div class="chart-card" style="margin-bottom:14px">
-      <div class="chart-title">Top 10 empresas — Future Reference</div><div class="chart-desc">De dónde provienen tus candidatos aptos</div>
+      <div class="chart-title">Top 10 Companies — Future Reference</div><div class="chart-desc">Where your qualified candidates come from</div>
       <div style="position:relative;width:100%;height:${Math.max(200, s.topEmployersPool.length * 32)}px;"><canvas id="employersPoolChart"></canvas></div>
     </div>
 
-    <div class="section-title">Banda salarial por nivel</div>
+    <div class="section-title">Salary Band by Level</div>
     <div class="salary-grid">
       <div class="salary-card" id="salaryAllCard">
-        <div class="salary-card-title">Todos los candidatos</div>
+        <div class="salary-card-title">All Candidates</div>
         <div class="salary-card-sub" id="salaryAllSub"></div>
         <div id="salaryAllRows"></div>
       </div>
       <div class="salary-card" id="salaryPoolCard">
-        <div class="salary-card-title">Future Reference — pool de talento</div>
+        <div class="salary-card-title">Future Reference — Talent Pool</div>
         <div class="salary-card-sub" id="salaryPoolSub"></div>
         <div id="salaryPoolRows"></div>
       </div>
     </div>
 
-    <div class="section-title">Job openings</div>
+    <div class="section-title">Job Openings</div>
     <div class="table-card">
       <table>
-        <thead><tr><th>POSICIÓN</th><th>ÁREA</th><th>ESTADO</th><th>FECHA</th></tr></thead>
+        <thead><tr><th>POSITION</th><th>AREA</th><th>STATUS</th><th>DATE</th></tr></thead>
         <tbody>
           ${raw.jobs.slice(0, 10).map(j => {
             const st = (j.Job_Opening_Status || '').toLowerCase();
@@ -740,8 +740,8 @@ function renderDashboard(raw) {
   funnelChart = new Chart(document.getElementById('funnelChart'), {
     type: 'bar',
     data: { labels: funnelLabels, datasets: [
-      { label: 'Candidatos', data: funnelData, backgroundColor: 'rgba(74,143,255,0.7)', borderRadius: 4, yAxisID: 'y' },
-      { label: 'Conversión %', data: convRates, type: 'line', tension: 0.3, pointRadius: 4, borderColor: '#3ecf8e', backgroundColor: '#3ecf8e', borderWidth: 2, fill: false, yAxisID: 'y2' }
+      { label: 'Candidates', data: funnelData, backgroundColor: 'rgba(74,143,255,0.7)', borderRadius: 4, yAxisID: 'y' },
+      { label: 'Conversion %', data: convRates, type: 'line', tension: 0.3, pointRadius: 4, borderColor: '#3ecf8e', backgroundColor: '#3ecf8e', borderWidth: 2, fill: false, yAxisID: 'y2' }
     ]},
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
       scales: {
@@ -763,7 +763,7 @@ function renderDashboard(raw) {
   if (window._genderAllChart) window._genderAllChart.destroy();
   window._genderAllChart = new Chart(document.getElementById('genderAllChart'), {
     type: 'doughnut',
-    data: { labels: ['Hombre (' + s.genderAll.male + ')', 'Mujer (' + s.genderAll.female + ')', 'N/D (' + s.genderAll.other + ')'],
+    data: { labels: ['Male (' + s.genderAll.male + ')', 'Female (' + s.genderAll.female + ')', 'N/A (' + s.genderAll.other + ')'],
       datasets: [{ data: [s.genderAll.male, s.genderAll.female, s.genderAll.other], backgroundColor: ['rgba(74,143,255,0.8)', 'rgba(255,95,95,0.8)', 'rgba(168,85,247,0.5)'], borderWidth: 1, hoverOffset: 4 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'left', labels: { color: '#6b6b67', font: { size: 12, family: 'DM Mono' }, boxWidth: 12, padding: 14 } } }, cutout: '55%' }
   });
@@ -778,7 +778,7 @@ function renderDashboard(raw) {
   if (window._catAllChart) window._catAllChart.destroy();
   window._catAllChart = new Chart(document.getElementById('catAllChart'), {
     type: 'bar',
-    data: { labels: s.catAll.map(c => c.cat), datasets: [{ label: 'Candidatos', data: s.catAll.map(c => c.count), backgroundColor: 'rgba(74,143,255,0.7)', borderRadius: 4 }] },
+    data: { labels: s.catAll.map(c => c.cat), datasets: [{ label: 'Candidates', data: s.catAll.map(c => c.count), backgroundColor: 'rgba(74,143,255,0.7)', borderRadius: 4 }] },
     options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
       scales: { x: { ticks: { color: '#6b6b67' }, grid: { color: 'rgba(0,0,0,0.06)' } }, y: { ticks: { color: '#6b6b67', font: { size: 11, family: 'DM Mono' } }, grid: { display: false } } } }
   });
@@ -786,7 +786,7 @@ function renderDashboard(raw) {
   if (window._employersAllChart) window._employersAllChart.destroy();
   window._employersAllChart = new Chart(document.getElementById('employersAllChart'), {
     type: 'bar',
-    data: { labels: s.topEmployersAll.map(e => e.label), datasets: [{ label: 'Candidatos', data: s.topEmployersAll.map(e => e.count), backgroundColor: 'rgba(74,143,255,0.7)', borderRadius: 4 }] },
+    data: { labels: s.topEmployersAll.map(e => e.label), datasets: [{ label: 'Candidates', data: s.topEmployersAll.map(e => e.count), backgroundColor: 'rgba(74,143,255,0.7)', borderRadius: 4 }] },
     options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
       scales: { x: { ticks: { color: '#6b6b67' }, grid: { color: 'rgba(0,0,0,0.06)' } }, y: { ticks: { color: '#6b6b67', font: { size: 10, family: 'DM Mono' } }, grid: { display: false } } } }
   });
@@ -801,7 +801,7 @@ function renderDashboard(raw) {
   if (window._genderPoolChart) window._genderPoolChart.destroy();
   window._genderPoolChart = new Chart(document.getElementById('genderPoolChart'), {
     type: 'doughnut',
-    data: { labels: ['Hombre (' + s.genderPool.male + ')', 'Mujer (' + s.genderPool.female + ')', 'N/D (' + s.genderPool.other + ')'],
+    data: { labels: ['Male (' + s.genderPool.male + ')', 'Female (' + s.genderPool.female + ')', 'N/A (' + s.genderPool.other + ')'],
       datasets: [{ data: [s.genderPool.male, s.genderPool.female, s.genderPool.other], backgroundColor: ['rgba(74,143,255,0.8)', 'rgba(255,95,95,0.8)', 'rgba(168,85,247,0.5)'], borderWidth: 1, hoverOffset: 4 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'left', labels: { color: '#6b6b67', font: { size: 12, family: 'DM Mono' }, boxWidth: 12, padding: 14 } } }, cutout: '55%' }
   });
@@ -809,7 +809,7 @@ function renderDashboard(raw) {
   if (window._employersPoolChart) window._employersPoolChart.destroy();
   window._employersPoolChart = new Chart(document.getElementById('employersPoolChart'), {
     type: 'bar',
-    data: { labels: s.topEmployersPool.map(e => e.label), datasets: [{ label: 'Candidatos', data: s.topEmployersPool.map(e => e.count), backgroundColor: 'rgba(62,207,142,0.7)', borderRadius: 4 }] },
+    data: { labels: s.topEmployersPool.map(e => e.label), datasets: [{ label: 'Candidates', data: s.topEmployersPool.map(e => e.count), backgroundColor: 'rgba(62,207,142,0.7)', borderRadius: 4 }] },
     options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
       scales: { x: { ticks: { color: '#6b6b67' }, grid: { color: 'rgba(0,0,0,0.06)' } }, y: { ticks: { color: '#6b6b67', font: { size: 10, family: 'DM Mono' } }, grid: { display: false } } } }
   });
@@ -818,7 +818,7 @@ function renderDashboard(raw) {
   renderSalaryCard(s.salaryBandsPool, 'salaryPoolSub', 'salaryPoolRows');
 
   const el = document.getElementById('lastUpdated');
-  if (el) el.textContent = `Actualizado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+  if (el) el.textContent = `Updated ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 async function loadData() {
