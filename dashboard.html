@@ -829,6 +829,9 @@ function renderDashboard(raw) {
   if (el) el.textContent = `Updated ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
+// ⚠️ Reemplaza esta URL con la de tu Web App de Google Apps Script
+var APPS_SCRIPT_URL = 'https://script.google.com/a/macros/outpostqa.com/s/AKfycbzsN9nmr6BCzDXljrHUsSUWlKK4bk79wQQH8cGlrL10zMkTvnJZnZGJ8OjjdkGXa9O4tg/exec';
+
 async function loadData() {
   const btn = document.getElementById('btnRefresh');
   const icon = document.getElementById('refreshIcon');
@@ -836,8 +839,11 @@ async function loadData() {
   icon.className = 'spin';
   setStatus('', 'connecting...');
   try {
-    const res = await fetch('/api/data');
-    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    if (APPS_SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') {
+      throw new Error('Configure APPS_SCRIPT_URL in the dashboard HTML');
+    }
+    const res = await fetch(APPS_SCRIPT_URL);
+    if (!res.ok) throw new Error('Server error ' + res.status);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     setStatus('active', 'connected');
@@ -845,13 +851,13 @@ async function loadData() {
     btn.disabled = false;
   } catch (err) {
     setStatus('', 'error');
-    document.getElementById('mainContent').innerHTML = `
-      <div class="state-screen">
-        <div style="color:var(--red);font-size:28px">⚠</div>
-        <div class="error-msg">Connection failed</div>
-        <div class="error-detail">${err.message}</div>
-        <button class="btn-refresh" style="margin-top:12px" onclick="loadData()">Try again</button>
-      </div>`;
+    document.getElementById('mainContent').innerHTML =
+      '<div class="state-screen">' +
+        '<div style="color:var(--red);font-size:28px">⚠</div>' +
+        '<div class="error-msg">Connection failed</div>' +
+        '<div class="error-detail">' + err.message + '</div>' +
+        '<button class="btn-refresh" style="margin-top:12px" onclick="loadData()">Try again</button>' +
+      '</div>';
   } finally {
     icon.className = '';
     icon.textContent = '↻';
