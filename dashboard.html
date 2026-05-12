@@ -172,7 +172,7 @@
     margin-top: 2px;
   }
 
-  .salary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .salary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 12px; margin-bottom: 14px; }
   .salary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
   .salary-card-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
   .salary-card-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 14px; }
@@ -440,16 +440,24 @@ function processData({ candidates, jobs, interviews, events, applications }) {
   // Salary bands by level
   const SALARY_LEVELS = ['Trainee', 'L1', 'L2', 'L3', 'Lead', 'Staff', 'Manager', 'Director'];
   function salaryBands(candidateList) {
-    return SALARY_LEVELS.map(lv => {
-      const salaries = candidateList
-        .filter(c => (c.Leveling || '').trim() === lv && c.Current_Salary && !isNaN(c.Current_Salary))
-        .map(c => Number(c.Current_Salary));
-      if (salaries.length === 0) return null;
-      const min = Math.min(...salaries);
-      const max = Math.max(...salaries);
-      const avg = Math.round(salaries.reduce((a,b) => a+b, 0) / salaries.length);
-      return { level: lv, min, max, avg, count: salaries.length };
-    }).filter(Boolean);
+    var result = [];
+    CATEGORIES.forEach(function(cat) {
+      SALARY_LEVELS.forEach(function(lv) {
+        var salaries = candidateList
+          .filter(function(c) {
+            return (c.Candidate_Category || '').trim() === cat &&
+                   (c.Leveling || '').trim() === lv &&
+                   c.Current_Salary && !isNaN(c.Current_Salary);
+          })
+          .map(function(c) { return Number(c.Current_Salary); });
+        if (salaries.length === 0) return;
+        var min = Math.min.apply(null, salaries);
+        var max = Math.max.apply(null, salaries);
+        var avg = Math.round(salaries.reduce(function(a,b) { return a+b; }, 0) / salaries.length);
+        result.push({ cat: cat, level: lv, min: min, max: max, avg: avg, count: salaries.length });
+      });
+    });
+    return result;
   }
   const salaryBandsAll = salaryBands(candidates);
   const salaryBandsPool = salaryBands(poolCandidates);
@@ -494,35 +502,50 @@ function generateInsight(s) {
 
 
 function renderSalaryCard(bands, subId, rowsId) {
-  const sub = document.getElementById(subId);
-  const rows = document.getElementById(rowsId);
+  var sub = document.getElementById(subId);
+  var rows = document.getElementById(rowsId);
   if (!sub || !rows) return;
-  const total = bands.reduce(function(a,b) { return a+b.count; }, 0);
-  sub.textContent = total + ' candidatos con salario capturado · MXN mensual';
+  var totalCount = bands.reduce(function(a,b) { return a+b.count; }, 0);
+  sub.textContent = totalCount + ' candidatos con salario capturado · MXN mensual';
   if (bands.length === 0) {
     rows.innerHTML = '<div style="font-size:12px;color:var(--hint)">Sin datos salariales capturados</div>';
     return;
   }
-  const globalMax = Math.max.apply(null, bands.map(function(b) { return b.max; }));
-  var html = '';
+  // Group by category
+  var byCategory = {};
   bands.forEach(function(b) {
-    var minPct = (b.min / globalMax) * 100;
-    var maxPct = (b.max / globalMax) * 100;
-    var avgPct = (b.avg / globalMax) * 100;
-    function fmt(v) { return '$' + v.toLocaleString('es-MX'); }
-    html += '<div class="salary-level-row">' +
-      '<div class="salary-level-name">' + b.level + '</div>' +
-      '<div class="salary-bar-wrap">' +
-        '<div class="salary-bar-range" style="left:' + minPct + '%;width:' + (maxPct-minPct) + '%"></div>' +
-        '<div class="salary-bar-avg" style="left:' + avgPct + '%"></div>' +
-      '</div>' +
-      '<div class="salary-stats">' +
-        '<span>' + fmt(b.min) + '</span>' +
-        '<span class="salary-stat-val">' + fmt(b.avg) + '</span>' +
-        '<span>' + fmt(b.max) + '</span>' +
-        '<span class="salary-count">(' + b.count + ')</span>' +
-      '</div>' +
-    '</div>';
+    if (!byCategory[b.cat]) byCategory[b.cat] = [];
+    byCategory[b.cat].push(b);
+  });
+  var globalMax = Math.max.apply(null, bands.map(function(b) { return b.max; }));
+  var html = '';
+  Object.keys(byCategory).forEach(function(cat) {
+    var catBands = byCategory[cat];
+    var catTotal = catBands.reduce(function(a,b) { return a+b.count; }, 0);
+    html += '<div style="margin-bottom:14px">' +
+      '<div style="font-size:11px;font-weight:600;color:var(--text);font-family:var(--mono);letter-spacing:0.04em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">' +
+        cat + ' <span style="font-weight:400;color:var(--hint)">(' + catTotal + ')</span>' +
+      '</div>';
+    catBands.forEach(function(b) {
+      var minPct = (b.min / globalMax) * 100;
+      var maxPct = (b.max / globalMax) * 100;
+      var avgPct = (b.avg / globalMax) * 100;
+      function fmt(v) { return '$' + Number(v).toLocaleString('es-MX'); }
+      html += '<div class="salary-level-row">' +
+        '<div class="salary-level-name">' + b.level + '</div>' +
+        '<div class="salary-bar-wrap">' +
+          '<div class="salary-bar-range" style="left:' + minPct + '%;width:' + (maxPct-minPct) + '%"></div>' +
+          '<div class="salary-bar-avg" style="left:' + avgPct + '%"></div>' +
+        '</div>' +
+        '<div class="salary-stats">' +
+          '<span>' + fmt(b.min) + '</span>' +
+          '<span class="salary-stat-val">' + fmt(b.avg) + '</span>' +
+          '<span>' + fmt(b.max) + '</span>' +
+          '<span class="salary-count">(' + b.count + ')</span>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
   });
   rows.innerHTML = html;
 }
